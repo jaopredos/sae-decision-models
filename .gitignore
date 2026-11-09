@@ -1,3 +1,6 @@
 .venv*/
 __pycache__/
 .cache/
+data/activations/
+data/typed_decisions/
+results/probe_typed/smoke/

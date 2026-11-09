@@ -1,0 +1,19 @@
+# Job CURTO da etapa A (o guia pede uma versão curta antes da completa): 20 casos por split,
+# paridade, truncamento e o smoke da etapa B. O primeiro job também instala o uv, o CPython 3.14
+# e o venv (.venv-sauron, ~5 GB com as libs CUDA) e baixa o Laya; os seguintes reaproveitam.
+#
+#   sauron submit -c scripts/sauron/jobs/extract-smoke.yaml scripts/sauron/extract.sauron
+
+name: probe-extract-smoke
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+# a menor classe (meia B200 por MIG); o Laya tem ~300M parâmetros
+vram: 89
+memory: 8g
+cpus: 4
+max_time: 45m
+
+workspace: sae-decision-models
+
+env:
+  LIMIT: "20"

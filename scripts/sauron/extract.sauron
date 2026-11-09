@@ -1,0 +1,32 @@
+# Etapa A: ativações por camada nos marcadores de opção do Laya multilingual (typed-decisions).
+#
+#   curto:    sauron submit -c scripts/sauron/jobs/extract-smoke.yaml scripts/sauron/extract.sauron
+#   completo: sauron submit -c scripts/sauron/jobs/extract.yaml       scripts/sauron/extract.sauron
+#
+# LIMIT (no env do yaml) > 0 roda só os primeiros N casos de cada split, grava em
+# data/activations/smoke e exercita também a etapa B (--smoke). O run_extract.py sai com erro,
+# antes de gravar ativações, se a checagem de paridade com o agent.predict falhar.
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+LIMIT="${LIMIT:-0}"
+if (( LIMIT > 0 )); then
+    OUT=data/activations/smoke
+else
+    OUT=data/activations/typed_decisions
+fi
+log "etapa A: LIMIT=${LIMIT} -> ${OUT}"
+
+for SPLIT in train test; do
+    uv run --frozen python run_extract.py --split "${SPLIT}" --limit "${LIMIT}" --device cuda --out "${OUT}"
+    [[ -f "${OUT}/${SPLIT}/decisions.parquet" ]] || die "run_extract não gravou ${OUT}/${SPLIT}/decisions.parquet"
+done
+
+if (( LIMIT > 0 )); then
+    log "smoke da etapa B (números sem significado)"
+    uv run --frozen python run_probes.py --smoke --device cuda
+fi
+du -sh "${OUT}"

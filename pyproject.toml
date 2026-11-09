@@ -20,3 +20,14 @@ dependencies = [
 
 [tool.uv]
 package = false
+
+# torch 2.15.0 nos dois lados: no Linux (cluster sauron, B200/Blackwell) vem do índice CUDA 13.2
+# do PyTorch; no Mac vem do PyPI (CPU/MPS). O índice cu132 só publica cp313/cp314, daí o
+# .python-version em 3.14.
+[[tool.uv.index]]
+name = "pytorch-cu132"
+url = "https://download.pytorch.org/whl/cu132"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu132", marker = "sys_platform == 'linux'" }]

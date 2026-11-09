@@ -1,0 +1,18 @@
+# Etapa A completa: 1.200 casos de treino + 400 de teste, 26 camadas, ~1,1 GB de ativações fp16.
+# Só depois de o extract-smoke passar.
+#
+#   sauron submit -c scripts/sauron/jobs/extract.yaml scripts/sauron/extract.sauron
+
+name: probe-extract
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# as ativações de todas as camadas ficam na RAM até o fim do split (~0,9 GB no treino)
+memory: 16g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  LIMIT: "0"

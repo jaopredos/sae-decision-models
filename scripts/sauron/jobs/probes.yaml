@@ -1,0 +1,13 @@
+# Etapa B: 26 camadas × 6 weight decays × 3 seeds na seleção, mais reajuste, controle e relatório.
+#
+#   sauron submit -c scripts/sauron/jobs/probes.yaml scripts/sauron/probes.sauron
+
+name: probe-train
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+memory: 16g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models

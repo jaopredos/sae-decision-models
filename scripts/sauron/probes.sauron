@@ -1,0 +1,17 @@
+# Etapa B: probes lineares por camada sobre as ativações da etapa A.
+#
+#   sauron submit -c scripts/sauron/jobs/probes.yaml scripts/sauron/probes.sauron
+#
+# Precisa de data/activations/typed_decisions/{train,test} do job de extração completo.
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+ACTS=data/activations/typed_decisions
+for SPLIT in train test; do
+    [[ -f "${ACTS}/${SPLIT}/parity.json" ]] || die "falta ${ACTS}/${SPLIT}: rode antes o extract.yaml"
+done
+uv run --frozen python run_probes.py --device cuda
+[[ -f results/probe_typed/REPORT.md ]] || die "run_probes não gravou o REPORT.md"

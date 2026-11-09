@@ -20,6 +20,7 @@ seed so it is reproducible, and flag it in REPORT.md.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import random
 from pathlib import Path
@@ -163,12 +164,12 @@ def load_newsgroups(n: int = 500, seed: int = NEWSGROUPS_SEED) -> List[dict]:
     return examples
 
 
-def _download_typed_decisions_parquet() -> Path:
+def _download_typed_decisions_parquet(split: str = "test") -> Path:
     from huggingface_hub import hf_hub_download
 
     path = hf_hub_download(
         repo_id="LocalLLaMA/typed-decisions", repo_type="dataset",
-        filename="all/test-00000-of-00001.parquet", revision=TYPED_DECISIONS_REVISION,
+        filename=f"all/{split}-00000-of-00001.parquet", revision=TYPED_DECISIONS_REVISION,
         local_dir=str(DATA_DIR / "typed_decisions"),
     )
     return Path(path)
@@ -221,6 +222,43 @@ def load_typed_decisions(n: int = 500, seed: int = 42) -> List[dict]:
 
     sampled = _stratified_sample(decisions, lambda d: (d["workflow"], d["qtype"]), n, seed)
     return sampled
+
+
+TYPED_DEV_FRACTION = 0.15
+
+
+def _case_hash(case_id: str) -> int:
+    return int(hashlib.sha256(case_id.encode("utf-8")).hexdigest(), 16)
+
+
+def typed_dev_ids(fraction: float = TYPED_DEV_FRACTION) -> set:
+    """Dev split of the typed-decisions train cases: the `fraction` of train case ids with the
+    smallest sha256. Ranking by hash (rather than `hash % 100 < 15`) gives exactly 15% -- the
+    modulo rule gave 148/1200 = 12.3% here -- while still depending only on the case id, never
+    on row order, sampling seeds or which subset of cases was extracted."""
+    ids = sorted((c["case_id"] for c in load_typed_cases("train")), key=_case_hash)
+    return set(ids[: round(fraction * len(ids))])
+
+
+def load_typed_cases(split: str) -> List[dict]:
+    """One dict per typed-decisions *case* (not per question), for feeding `agent.predict`.
+
+    `questions` is the dataset's own question dict, untouched (noul questions without `criteria`
+    stay without it, so Laya applies its own default option texts), so the model sees exactly
+    what `predict` would build from the benchmark row.
+    """
+    import pyarrow.parquet as pq
+
+    expected = {"train": 1200, "test": 400}[split]
+    cases = pq.read_table(_download_typed_decisions_parquet(split)).to_pylist()
+    assert len(cases) == expected, f"expected {expected} typed-decisions {split} cases, got {len(cases)}"
+    return [{
+        "case_id": case["id"],
+        "workflow": case["workflow"],
+        "state": json.loads(case["state"]),
+        "questions": json.loads(case["questions"]),
+        "gold": json.loads(case["gold"]),
+    } for case in cases]
 
 
 LOADERS = {
