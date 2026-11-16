@@ -4,3 +4,6 @@ __pycache__/
 data/activations/
 data/typed_decisions/
 results/probe_typed/smoke/
+
+# Configuração local do Claude Code (inclui o CLAUDE.md do projeto, não versionado)
+.claude/
