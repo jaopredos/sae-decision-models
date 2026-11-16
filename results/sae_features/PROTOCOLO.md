@@ -125,3 +125,18 @@ ficam dominadas por esses tokens, o que atrapalha o aprendizado dos tokens comun
 
 **Limitação a declarar:** a regra deixa os tokens massivos fora do SAE; se eles carregarem informação usada pelo
 scorer, isso não aparece nas features. A fidelidade a jusante mede o efeito de reconstruir só o resto.
+
+## Emenda 2: pareamento de features na Parte C e escolha da camada em inglês (antes de qualquer job da Parte C)
+
+1. **Pareamento por vizinho mais próximo mútuo, não húngaro.** O protocolo dizia "húngaro" sobre o cosseno dos
+   decoders. Com 16.384 × 16.384 features a atribuição húngara densa (~1 GB em float32 e custo cúbico) não é prática; o
+   pareamento passa a ser por **vizinho mais próximo mútuo** (a melhor correspondência de A em B é também a melhor de B em
+   A) com cosseno ≥ 0,7. Só vale quando a cópia do SAE ajustada ao fine-tuned é necessária (FVE_ft < FVE_base − 0,05);
+   a cópia parte do SAE do base, então o alinhamento esperado é alto. Reporto quantas features ficam pareadas.
+2. **Camada em inglês:** a do base com maior acurácia do probe no **dev** (não no teste), entre as camadas do backbone
+   (`enc_01` a `enc_28`); empate pela menor KL, como na etapa 3. Se a camada escolhida tiver massivos (regra da emenda 1,
+   recalculada para esse modelo), vale a mesma exclusão.
+3. **Corpus do SAE em inglês:** 10% domínio (treino-menos-dev) e 90% inglês (FineWeb), mesmo total de 50M tokens, k = 32,
+   largura 16 × 1.024 = 16.384, seed 0.
+4. **FVE e fidelidade** do base com os mesmos limiares da emenda 1. A comparação com o fine-tuned usa as mesmas entradas
+   (`max_len` 1.024, `head_max_len` 256); só acurácia e "associação com acerto" do fine-tuned são lidas no teste.
