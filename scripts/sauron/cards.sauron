@@ -1,0 +1,18 @@
+# Cartões de uma lista de features dada (ex.: as que mais mudam entre base e fine-tuned, Parte C).
+#
+#   sauron submit -c scripts/sauron/jobs/cards-partc-changed.yaml scripts/sauron/cards.sauron
+#
+# Variáveis: LAYER, NAME (SAE), CARDS_NAME (pasta de saída), FEATURES_FILE (JSON com a lista), CRITERION,
+# TOKENS_DIR, STAGE3_DIR, STATS_DIR; MODEL_ARGS (--repo/--subfolder/--revision do modelo cujos tokens aparecem nos cartões).
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+: "${LAYER:?}" "${NAME:?}" "${CARDS_NAME:?}" "${FEATURES_FILE:?}" "${TOKENS_DIR:?}" "${STAGE3_DIR:?}" "${STATS_DIR:?}"
+[[ -f "${FEATURES_FILE}" ]] || die "falta ${FEATURES_FILE}"
+uv run --frozen python run_feature_cards.py --sae "checkpoints/sae/${NAME}/sae.pt" --layer "${LAYER}" --name "${CARDS_NAME}" \
+    --device cuda --stats-dir "${STATS_DIR}" --tokens-dir "${TOKENS_DIR}" --stage3-dir "${STAGE3_DIR}" \
+    --out results/sae_features/feature_cards --features-file "${FEATURES_FILE}" --criterion-name "${CRITERION:-given}" ${MODEL_ARGS:-}
+du -sh "results/sae_features/feature_cards/${CARDS_NAME}"

@@ -1,0 +1,27 @@
+# Parte C: cartões das 30 features que mais mudam entre base e fine-tuned (2ª passada: cópia do SAE e pareamento), com os
+# exemplos e as estatísticas lidos no BASE em inglês (SAE en_base_enc17_k32, camada enc_17).
+#
+#   sauron submit -c scripts/sauron/jobs/cards-partc-changed.yaml scripts/sauron/cards.sauron
+
+name: cards-partc-changed
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# Medido: features-partc-base (3636), que gera cartões iguais, pico 4,4 GiB; 4,4 / 0,7 = 6,3 -> 6g.
+memory: 6g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  LAYER: "enc_17"
+  NAME: "en_base_enc17_k32"
+  CARDS_NAME: "en_changed_base_vs_ft"
+  CRITERION: "changed_base_vs_ft"
+  FEATURES_FILE: "results/sae_features/part_c_sae_ft/top_changed_features.json"
+  TOKENS_DIR: "data/activations/partc_tokens/base"
+  STAGE3_DIR: "data/activations/partc/base_common"
+  STATS_DIR: "results/sae_features/en_base_enc17_k32"
+  MODEL_ARGS: "--repo convaiinnovations/laya --subfolder none --revision e333cb7c823cd1787276228260f56d02fbf5180b"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"
