@@ -7,9 +7,9 @@ name: sae-train-enc17-literal
 image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
 gpus: 1
 vram: 89
-# Medido no job curto 3609 (mesma largura, 2M tokens): pico 2,5 GiB, a ~180-260 mil tokens/s na B200. O completo
-# carrega mais domínio e texto: 1ª ESTIMATIVA de 6g; reajustar pelo pico do completo (pico / 0,7).
-memory: 6g
+# Medido: curto 3609 (2M tokens) pico 2,5 GiB; completo enc_08 (3614) pico 6,0 GiB, no teto de 6g (page cache do domínio e do texto).
+# 6,0 / 0,7 = 8,6, então 8g.
+memory: 8g
 cpus: 4
 # 50M tokens / ~200 mil tokens/s = ~4 min de treino, mais a geração das ativações; 1h dá folga larga.
 max_time: 1h
