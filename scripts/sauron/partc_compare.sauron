@@ -1,0 +1,21 @@
+# Parte C, passo final: comparação base x fine-tuned (entradas idênticas, FVE do SAE, diferenças por feature).
+#
+# Variáveis: LAYER, NAME (SAE do base, em checkpoints/sae/<NAME>/sae.pt); SAE_FT_NAME (opcional, SAE ajustado ao fine-tuned);
+# ATTR_BASE/ATTR_FT (opcionais: pastas results/sae_features/<nome>).
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+: "${LAYER:?defina LAYER}"
+: "${NAME:?defina NAME}"
+OUT=results/sae_features/part_c
+EXTRA=()
+[[ -n "${SAE_FT_NAME:-}" ]] && EXTRA+=(--sae-ft "checkpoints/sae/${SAE_FT_NAME}/sae.pt")
+[[ -n "${ATTR_BASE:-}" ]] && EXTRA+=(--attr-base "${ATTR_BASE}")
+[[ -n "${ATTR_FT:-}" ]] && EXTRA+=(--attr-ft "${ATTR_FT}")
+uv run --frozen python run_part_c_compare.py --sae-base "checkpoints/sae/${NAME}/sae.pt" --layer "${LAYER}" --device cuda \
+    --tokens-base data/activations/partc_tokens/base --tokens-ft data/activations/partc_tokens/ft \
+    --markers-base-common data/activations/partc/base_common --markers-ft data/activations/partc/ft \
+    --markers-base-default data/activations/partc/base_default --out "${OUT}" "${EXTRA[@]}"

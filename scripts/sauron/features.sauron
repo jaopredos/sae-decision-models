@@ -1,0 +1,29 @@
+# Etapa 5: atribuição por gradiente, estatísticas por feature e cartões de um SAE já treinado.
+#
+#   Multilíngue (defaults): LAYER=enc_17 NAME=ml_enc17_k32 (no env do yaml).
+#   Parte C (base inglês): MODEL_ARGS="--repo convaiinnovations/laya --subfolder none --revision e333cb7c...",
+#     TOKENS_DIR=data/activations/partc_tokens/base STAGE3_DIR=data/activations/partc/base_common, sem OOF_ARG.
+#
+# Variáveis: LAYER, NAME (obrigatórias); MODEL_ARGS, TOKENS_DIR, STAGE3_DIR, OOF_ARG, STATS_ARGS, CARDS_ARGS.
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+: "${LAYER:?defina LAYER}"
+: "${NAME:?defina NAME}"
+SAE="checkpoints/sae/${NAME}/sae.pt"
+[[ -f "${SAE}" ]] || die "falta ${SAE}"
+TOK="${TOKENS_DIR:-data/activations/tokens/multilingual}"
+ST3="${STAGE3_DIR:-data/activations/typed_decisions}"
+OOF="${OOF_ARG-"--oof results/sae_features/probe_oof_${LAYER}.parquet"}"
+OUT=results/sae_features
+
+uv run --frozen python run_feature_attribution.py --sae "${SAE}" --layer "${LAYER}" --device cuda \
+    --out "${OUT}/${NAME}/attribution" ${MODEL_ARGS:-}
+uv run --frozen python run_feature_stats.py --sae "${SAE}" --layer "${LAYER}" --name "${NAME}" --device cuda \
+    --tokens-dir "${TOK}" --stage3-dir "${ST3}" ${OOF} --attr-dir "${OUT}/${NAME}/attribution" --out "${OUT}" ${STATS_ARGS:-}
+uv run --frozen python run_feature_cards.py --sae "${SAE}" --layer "${LAYER}" --name "${NAME}" --device cuda \
+    --stats-dir "${OUT}/${NAME}" --tokens-dir "${TOK}" --stage3-dir "${ST3}" --out "${OUT}/feature_cards" ${MODEL_ARGS:-} ${CARDS_ARGS:-}
+du -sh "${OUT}/${NAME}" "${OUT}/feature_cards/${NAME}"

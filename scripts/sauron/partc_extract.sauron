@@ -1,0 +1,34 @@
+# Parte C, passo 1: marcadores em todas as camadas do par em inglês (base e fine-tuned) e probes no base.
+#
+#   sauron submit -c scripts/sauron/jobs/partc-extract-smoke.yaml scripts/sauron/partc_extract.sauron
+#   sauron submit -c scripts/sauron/jobs/partc-extract.yaml       scripts/sauron/partc_extract.sauron
+#
+# Três configurações: base com os próprios limites (512/192), base com a configuração comum (1024/256) e o
+# fine-tuned (1024/256). Todos do mesmo repositório fixado. LIMIT > 0 (curto): só N casos, sem os probes.
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+REPO=convaiinnovations/laya
+REV=e333cb7c823cd1787276228260f56d02fbf5180b
+LIMIT="${LIMIT:-0}"
+if (( LIMIT > 0 )); then OUT=data/activations/partc_smoke; else OUT=data/activations/partc; fi
+
+run() {   # nome subfolder max_len head_max_len
+    local name="$1" sub="$2" ml="$3" hl="$4" extra=()
+    [[ -n "${ml}" ]] && extra+=(--max-len "${ml}" --head-max-len "${hl}")
+    for SPLIT in train test; do
+        uv run --frozen python run_extract.py --split "${SPLIT}" --limit "${LIMIT}" --device cuda \
+            --repo "${REPO}" --subfolder "${sub}" --revision "${REV}" "${extra[@]}" --out "${OUT}/${name}"
+    done
+}
+run base_default none "" ""
+run base_common  none 1024 256
+run ft           typed-decisions 1024 256
+du -sh "${OUT}"
+
+if (( LIMIT == 0 )); then
+    uv run --frozen python run_probes.py --acts "${OUT}/base_common" --out results/sae_features/part_c/probe_base_common --device cuda
+fi

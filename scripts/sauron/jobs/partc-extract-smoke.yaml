@@ -1,0 +1,18 @@
+# Parte C, job CURTO: marcadores do par em inglês em todas as camadas (20 casos por split, 3 configurações), sem os probes.
+#
+#   sauron submit -c scripts/sauron/jobs/partc-extract-smoke.yaml scripts/sauron/partc_extract.sauron
+
+name: sae-partc-extract-smoke
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# 1ª ESTIMATIVA (nenhuma medida ainda para este job); reajustar pelo pico medido (pico / 0,7).
+memory: 8g
+cpus: 4
+max_time: 30m
+
+workspace: sae-decision-models
+
+env:
+  LIMIT: "20"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

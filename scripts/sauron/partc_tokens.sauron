@@ -1,0 +1,25 @@
+# Parte C, passo 2: ativações de todos os tokens de UMA camada (LAYER, a escolhida pelo probe do base no dev), para o
+# base e para o fine-tuned, com a configuração comum (1024/256) e gate contra os marcadores do passo 1.
+#
+#   LAYER vem do env do yaml (ex.: enc_20).
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+: "${LAYER:?defina LAYER}"
+REPO=convaiinnovations/laya
+REV=e333cb7c823cd1787276228260f56d02fbf5180b
+LIMIT="${LIMIT:-0}"
+if (( LIMIT > 0 )); then M=data/activations/partc_smoke; OUT=data/activations/partc_tokens_smoke; else M=data/activations/partc; OUT=data/activations/partc_tokens; fi
+
+for item in "base none base_common" "ft typed-decisions ft"; do
+    set -- ${item}; NAME="$1"; SUB="$2"; MARK="$3"
+    for SPLIT in train test; do
+        uv run --frozen python run_extract_tokens.py --split "${SPLIT}" --layers "${LAYER}" --limit "${LIMIT}" --device cuda \
+            --repo "${REPO}" --subfolder "${SUB}" --revision "${REV}" --max-len 1024 --head-max-len 256 \
+            --out "${OUT}" --name "${NAME}" --gate-dir "${M}/${MARK}"
+    done
+done
+du -sh "${OUT}"

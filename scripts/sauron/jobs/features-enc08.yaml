@@ -1,0 +1,19 @@
+# Etapa 5 em enc_08 (multilíngue): atribuição por gradiente, estatísticas por feature e cartões do SAE ml_enc08_k32.
+#
+#   sauron submit -c scripts/sauron/jobs/features-enc08.yaml scripts/sauron/features.sauron
+
+name: sae-features-enc08
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# 1ª ESTIMATIVA (nenhuma medida ainda para este job); reajustar pelo pico medido (pico / 0,7).
+memory: 8g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  LAYER: "enc_08"
+  NAME: "ml_enc08_k32"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"
