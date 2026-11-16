@@ -95,3 +95,33 @@ Falhou: o job para e o dado é mostrado antes de seguir.
 ## Fora de escopo agora
 
 Ablação causal. O módulo `src/sae_intervention.py` deixa tudo pronto; ela **não** é rodada nesta etapa.
+
+## Emenda 1: tokens massivos (feita antes de qualquer job, a partir de medição no smoke de 20 casos de treino)
+
+**O que foi medido** (só treino, `data/activations/smoke_tokens`, 17.120 tokens): no `enc_17` o `[CLS]` tem norma média
+~19.000 contra mediana 93 nos demais; os 100 `[CLS]` (0,6% dos tokens) carregam 73% da variância total, e dois canais
+(580 e 488) ~79%. Além dos especiais, ~4,8% dos tokens (` the`, `_`, espaço: atenção-sink) têm norma 5× a 90× a mediana,
+concentrada no canal 580. A separação é limpa: só 13 tokens entre 2× e 5× a mediana. Os marcadores de opção ficam no
+regime normal (mediana 92, p99 110; 0 de 360 massivos). No `enc_08` nenhum token passa de 5× a mediana (a regra não
+exclui nada). Num SAE minúsculo de teste, a FVE do protocolo literal deu 0,9996 (trivial, só reconstrói os massivos),
+e 0,85 (domínio dev) e 0,63 (genérico) excluindo-os. Além de a FVE literal ser enganosa, a MSE e a escala (norma média)
+ficam dominadas por esses tokens, o que atrapalha o aprendizado dos tokens comuns, onde estão os marcadores.
+
+**Mudanças** (o resto do protocolo vale como estava):
+
+1. **Token massivo** := norma da ativação na camada `> 5 ×` a mediana das normas dos tokens não especiais (`[CLS]`,
+   `[SEP]` de cabeça e final ficam fora da mediana) do domínio treino-menos-dev. Limiar fixado uma vez por camada,
+   sem rótulos e sem teste, e guardado dentro do SAE (`massive_threshold`).
+2. O SAE treina **só em tokens não massivos** (domínio e genérico). A escala de entrada (norma média √hidden) é
+   calculada sobre eles.
+3. **FVE "todos os tokens" passa a ser a FVE sobre tokens não massivos**; os limiares de sinalização (0,80 e a
+   diferença de 0,10 para os marcadores) valem para ela. A FVE literal (todos os não-padding) fica como diagnóstico.
+4. **Fidelidade a jusante primária:** substituir pela reconstrução só os tokens não massivos (os massivos ficam
+   intocados). Diagnóstico: substituir todos. Limiares inalterados (queda > 3 p.p.; KL > 0,10 nat).
+5. Estatísticas de features e atribuição só em tokens não massivos. Reporto a fração de tokens massivos por papel e
+   por fonte. Sinalizar se mais de 1% dos marcadores de opção forem massivos em alguma camada.
+6. **Rodada literal (protocolo original, todos os tokens)** para `enc_17`, com `--massive-mult inf`, rotulada
+   "literal" e reportada ao lado, para mostrar o efeito.
+
+**Limitação a declarar:** a regra deixa os tokens massivos fora do SAE; se eles carregarem informação usada pelo
+scorer, isso não aparece nas features. A fidelidade a jusante mede o efeito de reconstruir só o resto.
