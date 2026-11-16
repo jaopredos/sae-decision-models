@@ -124,6 +124,8 @@ def main():
     ap.add_argument("--stage3-dir", default=str(REPO_ROOT / "data" / "activations" / "typed_decisions"))
     ap.add_argument("--out", default=str(REPO_ROOT / "results" / "sae_features" / "feature_cards"))
     ap.add_argument("--top", type=int, default=30)
+    ap.add_argument("--features-file", default=None, help="JSON list of feature ids to card instead of the rankings")
+    ap.add_argument("--criterion-name", default="given")
     ap.add_argument("--examples", type=int, default=5)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--repo", default=LAYA_REPO); ap.add_argument("--subfolder", default=LAYA_SUBFOLDER); ap.add_argument("--revision", default=LAYA_REVISION)
@@ -140,7 +142,11 @@ def main():
     base = snapshot_download(args.repo, revision=args.revision, allow_patterns=[f"{sub + '/' if sub else ''}tokenizer/*"])
     tok = AutoTokenizer.from_pretrained(str(Path(base) / (sub or "") / "tokenizer"))
 
-    crit = pick_features(stats_dir, args.top)
+    if args.features_file:
+        import json
+        crit = {args.criterion_name: [int(f) for f in json.loads(Path(args.features_file).read_text())][: args.top]}
+    else:
+        crit = pick_features(stats_dir, args.top)
     feats = sorted({f for fl in crit.values() for f in fl})
     which = {f: [c for c, fl in crit.items() if f in fl] for f in feats}
     print(f"[cards] {len(feats)} features in {len(crit)} criteria", flush=True)

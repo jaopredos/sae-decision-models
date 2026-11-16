@@ -55,6 +55,38 @@ def quality_section(d: Path, names) -> str:
     return s
 
 
+def counts_and_replication(d: Path, name: str) -> str:
+    """Naive vs CMH counts per view/criterion, and discovery -> dev/test reproducibility that does not depend on the
+    selection: Spearman of z over the features with support on both sides, and sign agreement of the top-k by |z|."""
+    rows_c, rows_r = [], []
+    for kind in ("error", "probe_right_laya_wrong"):
+        for view in ("pred", "corr", "state"):
+            f = d / name / f"feature_stats_{view}_{kind}.parquet"
+            if not f.exists():
+                continue
+            t = pd.read_parquet(f)
+            t = t[t.stratum == "all"]
+            disc = t[(t.split == "discovery") & t.supported]
+            g = lambda col, z, sgn: int(((disc[col] <= 0.05) & (disc[z] * sgn > 0)).sum())
+            rows_c.append({"visão": view, "critério": kind, "features com suporte": len(disc), "ingênuo q<=0,05": int((disc.q_bh <= 0.05).sum()),
+                           "CMH (estrato da visão) mais erro": g("cmh_q", "cmh_z", 1), "CMH menos erro": g("cmh_q", "cmh_z", -1),
+                           "CMH 1ª passada mais erro": g("cmh_qp_q", "cmh_qp_z", 1), "CMH 1ª passada menos erro": g("cmh_qp_q", "cmh_qp_z", -1)})
+            a = disc.set_index("feature")
+            for sp in ("dev", "test"):
+                b = t[(t.split == sp) & t.supported].set_index("feature")
+                j = a[["cmh_z", "lift"]].join(b[["cmh_z", "lift"]], how="inner", rsuffix="_b").dropna()
+                if len(j) < 10:
+                    continue
+                row = {"visão": view, "critério": kind, "split": sp, "features nos dois": len(j),
+                       "Spearman z": j.cmh_z.corr(j.cmh_z_b, method="spearman"), "Spearman lift ingênuo": j.lift.corr(j.lift_b, method="spearman")}
+                for k in (20, 100):
+                    top = j.reindex(j.cmh_z.abs().sort_values(ascending=False).index).head(k)
+                    row[f"sinal igual no top-{k}"] = float((np.sign(top.cmh_z) == np.sign(top.cmh_z_b)).mean())
+                rows_r.append(row)
+    return ("\n**Contagens: teste ingênuo × Cochran-Mantel-Haenszel** (conjunto de descoberta; PROTOCOLO emenda 3)\n\n" + md(pd.DataFrame(rows_c), "{:.0f}")
+            + "\n**Reprodutibilidade descoberta -> dev/teste** (todas as features com suporte nos dois lados, sem depender da seleção)\n\n" + md(pd.DataFrame(rows_r)))
+
+
 def top_table(d: Path, name: str, view: str, kind: str, k: int = 10) -> str:
     f = d / name / f"feature_stats_{view}_{kind}.parquet"
     if not f.exists():
@@ -62,19 +94,19 @@ def top_table(d: Path, name: str, view: str, kind: str, k: int = 10) -> str:
     t = pd.read_parquet(f)
     t = t[t.stratum == "all"]
     disc = t[(t.split == "discovery") & t.supported]
-    sig = disc[disc.q_bh <= 0.05]
-    top = (sig.sort_values("lift", ascending=False) if len(sig) else disc.sort_values("p_two_sided")).head(k)
+    sig = disc[(disc.cmh_q <= 0.05) & (disc.cmh_z > 0)]
+    top = (sig if len(sig) else disc.dropna(subset=["cmh_p"])).sort_values("cmh_z", ascending=False).head(k)
     rows = []
     for _, r in top.iterrows():
-        rep = {sp: t[(t.split == sp) & (t.feature == r.feature)] for sp in ("dev", "test")}
-        row = {"feature": int(r.feature), "ativas": int(r.n_active), "taxa de erro": r.rate_active, "base": r.base_rate, "lift": r.lift, "q (BH)": r.q_bh}
+        row = {"feature": int(r.feature), "ativas": int(r.n_active), "taxa de erro": r.rate_active, "lift ingênuo": r.lift,
+               "OR CMH": r.cmh_or, "z CMH": r.cmh_z, "q CMH": r.cmh_q}
         for sp in ("dev", "test"):
-            x = rep[sp]
-            row[f"lift {sp}"] = float(x["lift"].iloc[0]) if len(x) else np.nan
-            row[f"q {sp}"] = float(x["q_bh"].iloc[0]) if len(x) else np.nan
+            x = t[(t.split == sp) & (t.feature == r.feature)]
+            row[f"z CMH {sp}"] = float(x["cmh_z"].iloc[0]) if len(x) else np.nan
+            row[f"ativas {sp}"] = float(x["n_active"].iloc[0]) if len(x) else np.nan
         rows.append(row)
-    n_sig = int((disc.q_bh <= 0.05).sum())
-    return f"\n**{view} / {kind}**: {n_sig} features com q <= 0,05 de {len(disc)} com suporte; top {k} por lift (descoberta) com replicação:\n\n" + md(pd.DataFrame(rows))
+    return (f"\n**{view} / {kind}**: {len(sig)} features com q(CMH) <= 0,05 e mais erro (de {len(disc)} com suporte); top {k} por z do CMH "
+            "(descoberta) com os mesmos números em dev e teste:\n\n" + md(pd.DataFrame(rows)))
 
 
 def attribution_section(d: Path, name: str, k: int = 10) -> str:
@@ -146,6 +178,7 @@ def main():
     s.append("## Qualidade dos SAEs\n" + quality_section(d, names + ([args.literal] if args.literal else [])))
     for name in names:
         s.append(f"\n## Features de {name}\n")
+        s.append(counts_and_replication(d, name))
         for kind in ("error", "probe_right_laya_wrong"):
             for view in ("pred", "corr", "state"):
                 s.append(top_table(d, name, view, kind))

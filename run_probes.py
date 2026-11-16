@@ -117,6 +117,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--acts", default=str(REPO_ROOT / "data" / "activations" / "typed_decisions"))
     ap.add_argument("--out", default=str(REPO_ROOT / "results" / "probe_typed"))
+    ap.add_argument("--model-label", default="Laya multilingual", help="name of the model whose own answers are the baseline row")
     ap.add_argument("--smoke", action="store_true",
                     help="tiny stage-A output; exercises the code, numbers are meaningless")
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
@@ -200,7 +201,7 @@ def main():
     # baselines on test
     model_p = P.padded(test.dec["model_probs"], test.gold.shape)
     base = {
-        "Laya multilingual": model_p,
+        args.model_label: model_p,
         "prior (treino)": P.prior_probs(train, test),
         "aleatório": P.uniform_probs(test),
     }

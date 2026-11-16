@@ -34,11 +34,14 @@ def main():
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--device", default=None)
     ap.add_argument("--out", required=True)
+    ap.add_argument("--max-len", type=int, default=0)
+    ap.add_argument("--head-max-len", type=int, default=0)
     ap.add_argument("--repo", default=LAYA_REPO)
     ap.add_argument("--subfolder", default=LAYA_SUBFOLDER)
     ap.add_argument("--revision", default=LAYA_REVISION)
     args = ap.parse_args()
     sub = None if args.subfolder in ("", "none", "None") else args.subfolder
+    pk = {k: v for k, v in (("max_len", args.max_len), ("head_max_len", args.head_max_len)) if v}
     set_all_seeds()
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -51,7 +54,7 @@ def main():
             cases = cases[: args.limit]
         recs = []
         for n, case in enumerate(cases, 1):
-            recs.extend(attribute_case(agent, sae, args.layer, case))
+            recs.extend(attribute_case(agent, sae, args.layer, case, pk))
             if n % 100 == 0 or n == len(cases):
                 print(f"[attr] {split} {n}/{len(cases)} cases, {len(recs)} wrong decisions, {time.time() - t0:.0f}s", flush=True)
         arrays = {k: np.stack([r[k] for r in recs]) for k in ("a_pred", "a_corr", "a_state", "a_other")}

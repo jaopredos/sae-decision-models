@@ -52,11 +52,11 @@ def fired(sae, x, chunk=50_000):
     return f
 
 
-def predict_probs(agent, cases, qorder):
+def predict_probs(agent, cases, qorder, pk=None):
     """{(case_id, qid): np.array of probabilities in option order} from agent.predict."""
     out = {}
     for case in cases:
-        ans = normalize_answers(agent.predict(case["state"], case["questions"])["answers"])
+        ans = normalize_answers(agent.predict(case["state"], case["questions"], **(pk or {}))["answers"])
         for qid, a in ans.items():
             out[(case["case_id"], qid)] = np.array([a["probabilities"][o] for o in qorder[(case["case_id"], qid)]])
     return out
@@ -74,6 +74,9 @@ def main():
     ap.add_argument("--val-tokens", type=int, default=1_000_000)
     ap.add_argument("--max-dev-cases", type=int, default=0)
     ap.add_argument("--rows-per-fwd", type=int, default=64)
+    ap.add_argument("--sources", default="", help="comma list of corpus sources for the held-out text (default: all)")
+    ap.add_argument("--max-len", type=int, default=0)
+    ap.add_argument("--head-max-len", type=int, default=0)
     ap.add_argument("--repo", default=None)
     ap.add_argument("--subfolder", default="__default__")
     ap.add_argument("--revision", default=None)
@@ -122,6 +125,9 @@ def main():
 
     # ---- 2. held-out generic text, by source -------------------------------------------------------
     df = pd.read_parquet(args.corpus)
+    if args.sources:
+        df = df[df["source"].isin(args.sources.split(","))]
+    pk = {k: v for k, v in (("max_len", args.max_len), ("head_max_len", args.head_max_len)) if v}
     val_store = C.build_store(agent.tok, df, {}, val=True, seed=0)
     fwd = layer_output_fn(agent, args.layer)
     it = C.batches(val_store, args.rows_per_fwd, seed=1)
@@ -165,7 +171,7 @@ def main():
     pre = agent.model.register_forward_pre_hook(lambda m, a: cur_ids.__setitem__("ids", a[0]))
     markers_only = lambda h: cur_ids["ids"].to(h.device) == mask_id
 
-    base = predict_probs(agent, cases, qorder)
+    base = predict_probs(agent, cases, qorder, pk)
     keys = list(base)
     acc0 = float(np.mean([qorder[k][int(np.argmax(base[k]))] == gold[k] for k in keys]))
     add("downstream", "original", "accuracy", acc0); add("downstream", "original", "n_decisions", len(keys))
@@ -185,7 +191,7 @@ def main():
         if name == "replace_all_incl_massive" and not np.isfinite(thr_sae):
             sae.massive_threshold.fill_(float("inf"))
         with SAEIntervention(sae, layer_mod, **kw):
-            mod = predict_probs(agent, cases, qorder)
+            mod = predict_probs(agent, cases, qorder, pk)
         if name == "replace_all_incl_massive" and not np.isfinite(thr_sae):
             sae.massive_threshold.fill_(diag_thr)
         acc = float(np.mean([qorder[k][int(np.argmax(mod[k]))] == gold[k] for k in keys]))

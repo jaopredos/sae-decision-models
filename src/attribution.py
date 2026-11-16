@@ -38,7 +38,7 @@ def feature_attribution(sae: TopKSAE, h: torch.Tensor, g: torch.Tensor) -> Dict[
     return {"a": a, "massive": massive, "total_attr": a.sum(), "total_hg": hg}
 
 
-def attribute_case(agent, sae: TopKSAE, label: str, case: Dict) -> List[Dict]:
+def attribute_case(agent, sae: TopKSAE, label: str, case: Dict, predict_kwargs: Dict | None = None) -> List[Dict]:
     """Attribution of every WRONG decision of one case (wrong = official bf16 `predict` != gold label).
 
     Per wrong decision returns float16 vectors [F]: at the predicted-option marker, at the correct-option
@@ -47,7 +47,7 @@ def attribute_case(agent, sae: TopKSAE, label: str, case: Dict) -> List[Dict]:
     state, questions = case["state"], case["questions"]
     layer = dict(layer_modules(agent.model))[label]
     with capture(agent, []) as cap:
-        ref = agent.predict(state, questions)["answers"]
+        ref = agent.predict(state, questions, **(predict_kwargs or {}))["answers"]
     ids, internal, items = cap.encode_calls[0]
     args = cap.forward_calls[0][0]
     input_ids, attention_mask, marker_pos, marker_mask, qtype = [a.to(agent.device) for a in args[:5]]
