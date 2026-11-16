@@ -1,0 +1,22 @@
+# Parte C: SAE TopK (k=32, 16 x 1024 = 16.384 latentes) em enc_17 do base em inglês: 50M tokens, 10% domínio (treino-menos-dev) e 90% inglês (FineWeb), PROTOCOLO emenda 2.
+#
+#   sauron submit -c scripts/sauron/jobs/sae-train-partc-base.yaml scripts/sauron/sae_train.sauron
+
+name: sae-train-partc-base
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# Medido: treino multilíngue de 768 dims, pico 6,0 GiB (no teto de 6g). Com 1024 dims e mais texto: 1ª ESTIMATIVA de 10g.
+memory: 10g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  LAYER: "enc_17"
+  NAME: "en_base_enc17_k32"
+  TOTAL_TOKENS: "50000000"
+  DOMAIN_DIR: "data/activations/partc_tokens/base"
+  EXTRA_ARGS: "--resume --sources en --repo convaiinnovations/laya --subfolder none --revision e333cb7c823cd1787276228260f56d02fbf5180b"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

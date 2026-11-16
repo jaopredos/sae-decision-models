@@ -1,0 +1,21 @@
+# Parte C: qualidade e fidelidade a jusante do SAE do base em inglês, com a configuração comum (1024/256) e só texto em inglês.
+#
+#   sauron submit -c scripts/sauron/jobs/sae-quality-partc-base.yaml scripts/sauron/sae_quality.sauron
+
+name: sae-quality-partc-base
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# Medido: sae-quality multilíngue pico 3,0 a 4,0 GiB; com o modelo grande e 1024 dims: 1ª ESTIMATIVA de 8g.
+memory: 8g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  LAYER: "enc_17"
+  NAME: "en_base_enc17_k32"
+  DOMAIN_DIR: "data/activations/partc_tokens/base"
+  EXTRA_ARGS: "--sources en --max-len 1024 --head-max-len 256 --repo convaiinnovations/laya --subfolder none --revision e333cb7c823cd1787276228260f56d02fbf5180b"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

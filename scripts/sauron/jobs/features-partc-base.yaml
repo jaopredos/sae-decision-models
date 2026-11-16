@@ -1,0 +1,24 @@
+# Parte C: atribuição por gradiente, estatísticas e cartões do SAE do base lido no BASE em inglês (sem probe fora da dobra).
+#
+#   sauron submit -c scripts/sauron/jobs/features-partc-base.yaml scripts/sauron/features.sauron
+
+name: features-partc-base
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# Medido: features multilíngues pico 4,3 GiB (com atribuição). Modelo maior: 1ª ESTIMATIVA de 8g.
+memory: 8g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  LAYER: "enc_17"
+  NAME: "en_base_enc17_k32"
+  TOKENS_DIR: "data/activations/partc_tokens/base"
+  STAGE3_DIR: "data/activations/partc/base_common"
+  OOF_ARG: "none"
+  MODEL_ARGS: "--repo convaiinnovations/laya --subfolder none --revision e333cb7c823cd1787276228260f56d02fbf5180b"
+  PREDICT_ARGS: "--max-len 1024 --head-max-len 256"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

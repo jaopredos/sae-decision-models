@@ -1,0 +1,19 @@
+# Parte C: todos os tokens de enc_17 (camada escolhida pelo probe do base no dev, emenda 2) para o base e o fine-tuned, configuração comum 1024/256, gate contra os marcadores do job 3625.
+#
+#   sauron submit -c scripts/sauron/jobs/partc-tokens.yaml scripts/sauron/partc_tokens.sauron
+
+name: partc-tokens
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# Medido: curto 3624 (20 casos) pico 2,7 GiB; o completo grava ~10 GB (page cache), como a extração multilíngue (8,0 GiB num teto de 8g). 1ª ESTIMATIVA de 10g.
+memory: 10g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  LIMIT: "0"
+  LAYER: "enc_17"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

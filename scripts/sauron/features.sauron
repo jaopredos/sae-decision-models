@@ -4,7 +4,7 @@
 #   Parte C (base inglês): MODEL_ARGS="--repo convaiinnovations/laya --subfolder none --revision e333cb7c...",
 #     TOKENS_DIR=data/activations/partc_tokens/base STAGE3_DIR=data/activations/partc/base_common, sem OOF_ARG.
 #
-# Variáveis: LAYER, NAME (obrigatórias); SKIP_ATTR=1 reaproveita a atribuição já gravada; MODEL_ARGS, TOKENS_DIR, STAGE3_DIR, OOF_ARG, STATS_ARGS, CARDS_ARGS.
+# Variáveis: LAYER, NAME (obrigatórias); OUT_NAME (pasta de saída, padrão NAME), PREDICT_ARGS (ex.: --max-len 1024 --head-max-len 256), SKIP_CARDS=1; SKIP_ATTR=1 reaproveita a atribuição já gravada; MODEL_ARGS, TOKENS_DIR, STAGE3_DIR, OOF_ARG, STATS_ARGS, CARDS_ARGS.
 
 set -euo pipefail
 
@@ -18,17 +18,21 @@ SAE="checkpoints/sae/${NAME}/sae.pt"
 TOK="${TOKENS_DIR:-data/activations/tokens/multilingual}"
 ST3="${STAGE3_DIR:-data/activations/typed_decisions}"
 OOF="${OOF_ARG-"--oof results/sae_features/probe_oof_${LAYER}.parquet"}"
+[[ "${OOF_ARG:-}" == "none" ]] && OOF=""   # sem probe fora da dobra (Parte C): "none" em vez de vazio, que o yaml pode descartar
 OUT=results/sae_features
+ON="${OUT_NAME:-${NAME}}"   # pasta de saída; o SAE vem de NAME (ex.: o mesmo SAE lido no fine-tuned)
 
 if [[ "${SKIP_ATTR:-0}" == "1" ]]; then
-    [[ -f "${OUT}/${NAME}/attribution/attribution_train.npz" ]] || die "SKIP_ATTR=1, mas falta ${OUT}/${NAME}/attribution"
+    [[ -f "${OUT}/${ON}/attribution/attribution_train.npz" ]] || die "SKIP_ATTR=1, mas falta ${OUT}/${ON}/attribution"
     log "atribuição já existe; só estatísticas e cartões"
 else
     uv run --frozen python run_feature_attribution.py --sae "${SAE}" --layer "${LAYER}" --device cuda \
-        --out "${OUT}/${NAME}/attribution" ${MODEL_ARGS:-}
+        --out "${OUT}/${ON}/attribution" ${MODEL_ARGS:-} ${PREDICT_ARGS:-}
 fi
-uv run --frozen python run_feature_stats.py --sae "${SAE}" --layer "${LAYER}" --name "${NAME}" --device cuda \
-    --tokens-dir "${TOK}" --stage3-dir "${ST3}" ${OOF} --attr-dir "${OUT}/${NAME}/attribution" --out "${OUT}" ${STATS_ARGS:-}
-uv run --frozen python run_feature_cards.py --sae "${SAE}" --layer "${LAYER}" --name "${NAME}" --device cuda \
-    --stats-dir "${OUT}/${NAME}" --tokens-dir "${TOK}" --stage3-dir "${ST3}" --out "${OUT}/feature_cards" ${MODEL_ARGS:-} ${CARDS_ARGS:-}
-du -sh "${OUT}/${NAME}" "${OUT}/feature_cards/${NAME}"
+uv run --frozen python run_feature_stats.py --sae "${SAE}" --layer "${LAYER}" --name "${ON}" --device cuda \
+    --tokens-dir "${TOK}" --stage3-dir "${ST3}" ${OOF} --attr-dir "${OUT}/${ON}/attribution" --out "${OUT}" ${STATS_ARGS:-}
+if [[ "${SKIP_CARDS:-0}" != "1" ]]; then
+    uv run --frozen python run_feature_cards.py --sae "${SAE}" --layer "${LAYER}" --name "${ON}" --device cuda \
+        --stats-dir "${OUT}/${ON}" --tokens-dir "${TOK}" --stage3-dir "${ST3}" --out "${OUT}/feature_cards" ${MODEL_ARGS:-} ${CARDS_ARGS:-}
+fi
+du -sh "${OUT}/${ON}"
