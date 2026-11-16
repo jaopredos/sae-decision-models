@@ -140,3 +140,22 @@ scorer, isso não aparece nas features. A fidelidade a jusante mede o efeito de 
    largura 16 × 1.024 = 16.384, seed 0.
 4. **FVE e fidelidade** do base com os mesmos limiares da emenda 1. A comparação com o fine-tuned usa as mesmas entradas
    (`max_len` 1.024, `head_max_len` 256); só acurácia e "associação com acerto" do fine-tuned são lidas no teste.
+
+## Emenda 3: estratos do teste de Cochran-Mantel-Haenszel por visão (feita depois de ver os resultados do `enc_08`)
+
+**O que motivou** (dado de treino-menos-dev, replicado em dev e teste): o ranking ingênuo por taxa de erro na visão "marcador
+da opção prevista" é dominado por identidade da opção. Várias das 12 features de maior lift compartilham a mesma confusão
+(`action|3>1`, 111 decisões) e Laya escolhe o índice 3 em 47% das decisões de `choice` contra 9% do gabarito. Primeira
+passada do CMH (estratos = pergunta × opção prevista, igual para as três visões): das 364 features ingênuas na visão
+prevista só 9 (mais erro) e 11 (menos erro) sobrevivem; na visão de estado 3.226 caem para 42 e 77; na visão da opção
+correta 476 caem para 419, o que sugere que o estrato estava errado para essa visão.
+
+**Mudança:** o estrato passa a ser a identidade da opção a que a visão se refere: `pred` = pergunta × opção prevista;
+`corr` = pergunta × opção correta; `state` = só a pergunta (um token de estado não pertence a uma opção; condicionar na
+opção prevista, que é consequência do estado, seria controlar um mediador). Colunas `cmh_*` = estrato por visão (primário);
+`cmh_qp_*` = primeira passada, mantida. A escolha foi feita **depois** de ver as contagens do `enc_08` (mas só no conjunto
+de descoberta/dev/teste agregado, sem selecionar nenhuma feature), então vale como análise exploratória declarada, e o
+`REPORT.md` mostra as duas.
+
+**Limites que seguem valendo:** o CMH controla pergunta e identidade de opção, não o resto do conteúdo do caso. Features
+significativas aqui são candidatas, correlacionais.
