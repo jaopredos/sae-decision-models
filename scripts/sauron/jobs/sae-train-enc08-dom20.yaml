@@ -1,0 +1,22 @@
+# Variante pré-declarada (PROTOCOLO.md, emenda 1 / FVE): em enc_08 a FVE nos marcadores (0,777) ficou mais de 0,10
+# abaixo da geral (0,954), então treino com 20% de domínio e reporto as duas. Mesmo orçamento e sementes.
+#
+#   sauron submit -c scripts/sauron/jobs/sae-train-enc08-dom20.yaml scripts/sauron/sae_train.sauron
+
+name: sae-train-enc08-dom20
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# Medido: enc_08 (3614) pico 6,0 GiB; 6,0 / 0,7 = 8,6 -> 8g.
+memory: 8g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  LAYER: "enc_08"
+  NAME: "ml_enc08_k32_dom20"
+  TOTAL_TOKENS: "50000000"
+  EXTRA_ARGS: "--resume --domain-frac 0.2"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

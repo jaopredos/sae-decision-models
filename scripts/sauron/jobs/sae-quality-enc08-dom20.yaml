@@ -1,0 +1,19 @@
+# Qualidade e fidelidade a jusante da variante com 20% de domínio de enc_08.
+#
+#   sauron submit -c scripts/sauron/jobs/sae-quality-enc08-dom20.yaml scripts/sauron/sae_quality.sauron
+
+name: sae-quality-enc08-dom20
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# Medido: sae-quality-enc08 (3619) pico 3,8 GiB e sae-quality-enc17 (3621) 4,0 GiB; 4,0 / 0,7 = 5,7 -> 6g.
+memory: 6g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  LAYER: "enc_08"
+  NAME: "ml_enc08_k32_dom20"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

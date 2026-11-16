@@ -1,0 +1,22 @@
+# Etapa 5 em enc_08, segunda passada: refaz estatísticas e cartões com o teste estratificado de Cochran-Mantel-Haenszel
+# (pergunta x opção escolhida), reaproveitando a atribuição por gradiente já gravada pelo job de features anterior.
+#
+#   sauron submit -c scripts/sauron/jobs/features-enc08-cmh.yaml scripts/sauron/features.sauron
+
+name: sae-features-enc08-cmh
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# Medido: jobs de features 3618 (enc_08) e 3620 (enc_17) com atribuição: pico 4,3 GiB; sem ela deve ser menor.
+# 4,3 / 0,7 = 6,1 -> 6g.
+memory: 6g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  LAYER: "enc_08"
+  NAME: "ml_enc08_k32"
+  SKIP_ATTR: "1"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"
