@@ -7,3 +7,5 @@ results/probe_typed/smoke/
 
 # Configuração local do Claude Code (inclui o CLAUDE.md do projeto, não versionado)
 .claude/
+data/corpus*/
+checkpoints/

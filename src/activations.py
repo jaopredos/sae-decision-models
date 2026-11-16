@@ -36,10 +36,12 @@ LAYA_REVISION = "7b928d828b7b0e022f929d9bd2e44165aa270148"
 OPTION_TOKEN_CAP = 48  # laya.common.build_head truncates every rendered option to this many tokens
 
 
-def load_agent(device: str | None = None):
+def load_agent(device: str | None = None, repo: str = LAYA_REPO, subfolder: str | None = LAYA_SUBFOLDER,
+               revision: str | None = LAYA_REVISION):
+    """Defaults are the stage-3 checkpoint (multilingual, pinned); stage 5 passes the English pair."""
     import laya
 
-    agent = laya.load(LAYA_REPO, subfolder=LAYA_SUBFOLDER, revision=LAYA_REVISION, device=device)
+    agent = laya.load(repo, subfolder=subfolder, revision=revision, device=device)
     agent.model.eval()
     return agent
 
@@ -124,14 +126,18 @@ def _options_over_cap(agent, q_internal: Dict) -> int:
 
 
 @torch.no_grad()
-def extract_case(agent, modules, case: Dict) -> Dict[str, Any]:
-    """Run one case; returns per-decision records, per-layer marker vectors and parity numbers."""
+def extract_case(agent, modules, case: Dict, predict_kwargs: Dict | None = None) -> Dict[str, Any]:
+    """Run one case; returns per-decision records, per-layer marker vectors and parity numbers.
+
+    `predict_kwargs` (e.g. max_len / head_max_len) goes to both `agent.predict` calls; the default
+    keeps the stage-3 behaviour (the checkpoint's own limits)."""
     from laya.agent import _amp_context
 
+    pk = predict_kwargs or {}
     state, questions = case["state"], case["questions"]
-    ref = agent.predict(state, questions)["answers"]
+    ref = agent.predict(state, questions, **pk)["answers"]
     with capture(agent, modules) as cap:
-        hooked = agent.predict(state, questions)["answers"]
+        hooked = agent.predict(state, questions, **pk)["answers"]
 
     assert len(cap.forward_calls) == 1 and len(cap.encode_calls) == 1, \
         (len(cap.forward_calls), len(cap.encode_calls))
@@ -212,3 +218,99 @@ def extract_case(agent, modules, case: Dict) -> Dict[str, Any]:
 
     return {"decisions": decisions, "markers": markers, "parity": parity,
             "vectors": {label: np.concatenate(v) for label, v in vectors.items()}}
+
+
+# ---- all-token extraction (stage 4) ---------------------------------------------------------
+# Roles of a non-padding token in a Laya sequence:
+#   [CLS] <type> question: <instr> [SEP] [MASK] opt0 [MASK] opt1 ... [SEP] state ... [SEP]
+ROLE_CLS, ROLE_QUESTION, ROLE_MARKER, ROLE_OPTION, ROLE_HEAD_SEP, ROLE_STATE, ROLE_END_SEP = range(7)
+
+
+def token_roles(ids: List[int], markers: List[int], cls_id: int, sep_id: int) -> np.ndarray:
+    """Role of each token of one sequence, from the marker positions that build_sequence returned."""
+    n = len(ids)
+    roles = np.full(n, ROLE_STATE, dtype=np.int8)
+    roles[: markers[0]] = ROLE_QUESTION
+    roles[0] = ROLE_CLS
+    head_sep = next(p for p in range(markers[-1] + 1, n) if ids[p] == sep_id)
+    roles[markers[0]: head_sep] = ROLE_OPTION
+    roles[markers] = ROLE_MARKER
+    roles[head_sep] = ROLE_HEAD_SEP
+    if ids[-1] == sep_id and n - 1 > head_sep:
+        roles[-1] = ROLE_END_SEP
+    return roles
+
+
+@torch.no_grad()
+def extract_tokens_case(agent, modules, case: Dict, predict_kwargs: Dict | None = None) -> Dict[str, Any]:
+    """All non-padding token activations of the layers in `modules`, for the 5 rows of one case.
+
+    The activations come from inside the forward that `agent.predict` runs (same inputs as stage 3).
+    Returns per-row records plus, per layer, a float16 array [n_tokens, hidden] in row order
+    (rows in question order, tokens in sequence order), and the probabilities of a hooked and an
+    un-hooked `predict` so the caller can check parity.
+    """
+    pk = predict_kwargs or {}
+    state, questions = case["state"], case["questions"]
+    ref = agent.predict(state, questions, **pk)["answers"]
+    with capture(agent, modules) as cap:
+        hooked = agent.predict(state, questions, **pk)["answers"]
+    assert len(cap.forward_calls) == 1 and len(cap.encode_calls) == 1
+    ids, internal, items = cap.encode_calls[0]
+    (input_ids, attention_mask, marker_pos, marker_mask, _qtype), _out = \
+        cap.forward_calls[0][0][:5], cap.forward_calls[0][1]
+    valid = attention_mask.bool()
+    rows, parity = [], []
+    cls_id, sep_id = agent.tok.cls_token_id, agent.tok.sep_token_id
+    for j, qid in enumerate(ids):
+        seq = items[j]["ids"]
+        assert int(valid[j].sum()) == len(seq) and input_ids[j, : len(seq)].tolist() == seq
+        opts = option_ids(internal[qid])
+        rows.append({"case_id": case["case_id"], "question_id": qid, "n_options": len(opts),
+                     "token_ids": np.asarray(seq, dtype=np.int32),
+                     "roles": token_roles(seq, items[j]["markers"], cls_id, sep_id),
+                     "markers": np.asarray(items[j]["markers"], dtype=np.int16),
+                     "n_state_tokens_dropped": int(items[j]["state_stats"]["state_tokens_dropped"])})
+        parity.append(float(np.abs(_probs_vector(hooked, qid, opts) - _probs_vector(ref, qid, opts)).max()))
+    acts = {}
+    for label, _ in modules:
+        out = cap.outputs[label]
+        assert out.ndim == 3 and out.shape[:2] == input_ids.shape, (label, tuple(out.shape))
+        acts[label] = out[valid].float().cpu().numpy().astype(np.float16)
+        if not np.isfinite(acts[label]).all():
+            raise FloatingPointError(f"non-finite fp16 activation: {case['case_id']} {label}")
+    return {"rows": rows, "acts": acts, "parity": parity}
+
+
+# ---- truncated forward: activations of one layer for arbitrary text -----------------------------
+class _StopForward(Exception):
+    pass
+
+
+def layer_output_fn(agent, label: str):
+    """fn(input_ids, attention_mask) -> hidden states [B,S,H] of layer `label`, computed in the
+    same way as inside `agent.predict` (same encoder call, same autocast) but stopping right after
+    that layer, so deeper layers are not run. Works for the encoder layers (`enc_NN`)."""
+    from laya.agent import _amp_context
+
+    layer = dict(layer_modules(agent.model))[label]
+    enc = agent.model.encoder
+    store: Dict[str, torch.Tensor] = {}
+
+    def hook(_m, _i, output):
+        store["h"] = (output[0] if isinstance(output, tuple) else output).detach()
+        raise _StopForward
+
+    @torch.no_grad()
+    def fn(input_ids, attention_mask):
+        handle = layer.register_forward_hook(hook)
+        try:
+            with _amp_context(agent.device, agent.dtype, agent._amp_enabled_for(input_ids.shape[0])):
+                enc(input_ids=input_ids.to(agent.device), attention_mask=attention_mask.to(agent.device))
+        except _StopForward:
+            pass
+        finally:
+            handle.remove()
+        return store.pop("h")
+
+    return fn
