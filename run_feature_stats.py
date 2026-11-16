@@ -20,9 +20,10 @@ Writes, under <out>/<name>/:
   feature_stats_attribution.parquet                   if --attr-dir has the gradient-attribution arrays
   decision_views.parquet                              per-decision metadata used (pred/gold/err/probe/subset)
 Each stats file has one line per (feature, split, stratum); strata are all, qtype=*, workflow=*. Besides the plain
-enrichment it carries cmh_z / cmh_or / cmh_p / cmh_q: the Cochran-Mantel-Haenszel test controlling for the question
-and the option Laya picked (what carries most of Laya's prior bias), so a feature that only says "this is the option
-Laya likes" does not rank high there.
+enrichment it carries cmh_z / cmh_or / cmh_p / cmh_q: the Cochran-Mantel-Haenszel test controlling for the question and
+the option the view is about (pred: the option Laya picked; corr: the correct option; state: the question only), so a
+feature that only says "this is the option Laya likes" does not rank high there (PROTOCOLO emenda 3). cmh_qp_* is the
+first pass, question x predicted option for every view.
 """
 import argparse
 import json
@@ -105,11 +106,19 @@ def stats_for(views, meta, pool: np.ndarray, subset_masks, min_support, device):
             if m.sum() < 2 * min_support:
                 continue
             idx = torch.from_numpy(np.flatnonzero(m)).to(device)
-            keys = (meta["question_id"] + "|" + meta["pred_idx"].astype(str)).to_numpy()[np.flatnonzero(m)]
-            codes = torch.from_numpy(pd.factorize(keys)[0]).to(device)
+            rows_m = np.flatnonzero(m)
+            q_ = meta["question_id"].to_numpy()[rows_m]
+            qp = torch.from_numpy(pd.factorize(q_ + "|" + meta["pred_idx"].astype(str).to_numpy()[rows_m])[0]).to(device)
+            primary = {  # PROTOCOLO emenda 3: the stratum is what the view's option identity is
+                "pred": qp,
+                "corr": torch.from_numpy(pd.factorize(q_ + "|" + meta["gold_idx"].astype(str).to_numpy()[rows_m])[0]).to(device),
+                "state": torch.from_numpy(pd.factorize(q_)[0]).to(device)}
             for v in VIEWS:
                 t = F.enrichment_table(views[v][idx], y_all[idx], min_support)
-                t = t.merge(F.cmh_table(views[v][idx], y_all[idx], codes, min_support), on="feature")
+                t = t.merge(F.cmh_table(views[v][idx], y_all[idx], primary[v], min_support), on="feature")
+                # first pass (question x predicted option for every view), kept for the record
+                qp_t = F.cmh_table(views[v][idx], y_all[idx], qp, min_support).rename(columns=lambda c: c.replace("cmh_", "cmh_qp_"))
+                t = t.merge(qp_t, on="feature")
                 t.insert(0, "stratum", s_name); t.insert(0, "split", sub_name)
                 out[v].append(t)
     return {v: pd.concat(t, ignore_index=True) for v, t in out.items() if t}
