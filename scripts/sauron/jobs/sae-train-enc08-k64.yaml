@@ -1,0 +1,23 @@
+# Variante k=64 (PROTOCOLO.md: "k = 64 só se sobrar tempo, rotulada como variante") em enc_08. Mesmo orçamento (50M tokens),
+# 10% de domínio, sementes e regra de tokens massivos do SAE k=32; só muda k. Sem estatísticas de features: só qualidade.
+#
+#   sauron submit -c scripts/sauron/jobs/sae-train-enc08-k64.yaml scripts/sauron/sae_train.sauron
+
+name: sae-train-enc08-k64
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# Medido: treino k=32 de enc_08 (3614) pico 6,0 GiB; 6,0 / 0,7 = 8,6 -> 8g.
+memory: 8g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  LAYER: "enc_08"
+  NAME: "ml_enc08_k64"
+  K: "64"
+  TOTAL_TOKENS: "50000000"
+  EXTRA_ARGS: "--resume"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"
