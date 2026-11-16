@@ -127,6 +127,8 @@ def batches(store: TokenStore, rows_per_batch: int, seed: int = 0) -> Iterator[T
     """Endless (input_ids, attention_mask, source) batches; reshuffles after each pass."""
     rng = np.random.default_rng(seed)
     n = len(store.lengths)
+    assert n > 0, "empty token store"
+    rows_per_batch = min(rows_per_batch, n)  # a small held-out set must not make the iterator spin forever
     while True:
         order = rng.permutation(n)
         for a in range(0, n - rows_per_batch + 1, rows_per_batch):
