@@ -1,0 +1,22 @@
+# Parte C, 2ª passada (PROTOCOLO emenda 2): a FVE do SAE do base no fine-tuned caiu 0,138 (0,912 -> 0,774) no job 3638, mais que o limite de 0,05, então ajusto uma cópia do SAE nas ativações do fine-tuned, partindo do SAE do base, com 10M tokens.
+#
+#   sauron submit -c scripts/sauron/jobs/sae-train-partc-ftcopy.yaml scripts/sauron/sae_train.sauron
+
+name: sae-train-partc-ftcopy
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# Medido: o treino do SAE do base (3634, 50M tokens) teve pico de 7,8 GiB de 10g; com 10M tokens e a mesma largura: 10g mantidos (1ª ESTIMATIVA).
+memory: 10g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  LAYER: "enc_17"
+  NAME: "en_ft_enc17_k32_copy"
+  TOTAL_TOKENS: "10000000"
+  DOMAIN_DIR: "data/activations/partc_tokens/ft"
+  EXTRA_ARGS: "--resume --sources en --repo convaiinnovations/laya --subfolder typed-decisions --revision e333cb7c823cd1787276228260f56d02fbf5180b --init-sae checkpoints/sae/en_base_enc17_k32/sae.pt"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

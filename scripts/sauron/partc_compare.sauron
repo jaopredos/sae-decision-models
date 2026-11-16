@@ -1,7 +1,7 @@
 # Parte C, passo final: comparação base x fine-tuned (entradas idênticas, FVE do SAE, diferenças por feature).
 #
 # Variáveis: LAYER, NAME (SAE do base, em checkpoints/sae/<NAME>/sae.pt); SAE_FT_NAME (opcional, SAE ajustado ao fine-tuned);
-# ATTR_BASE/ATTR_FT (opcionais: pastas results/sae_features/<nome>).
+# ATTR_BASE/ATTR_FT (opcionais: pastas results/sae_features/<nome>); COMPARE_OUT (pasta de saída).
 
 set -euo pipefail
 
@@ -10,7 +10,7 @@ source scripts/sauron/uv_env.sh
 
 : "${LAYER:?defina LAYER}"
 : "${NAME:?defina NAME}"
-OUT=results/sae_features/part_c
+OUT="${COMPARE_OUT:-results/sae_features/part_c}"   # a 2ª passada (SAE ajustado ao fine-tuned) usa outra pasta
 EXTRA=()
 [[ -n "${SAE_FT_NAME:-}" ]] && EXTRA+=(--sae-ft "checkpoints/sae/${SAE_FT_NAME}/sae.pt")
 [[ -n "${ATTR_BASE:-}" ]] && EXTRA+=(--attr-base "${ATTR_BASE}")

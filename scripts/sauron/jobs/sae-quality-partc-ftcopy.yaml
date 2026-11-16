@@ -1,0 +1,21 @@
+# Parte C, 2ª passada: qualidade da cópia do SAE ajustada ao fine-tuned (FVE e fidelidade a jusante no fine-tuned; o dev é contaminado para ele, então a acurácia absoluta não vale, só a variação).
+#
+#   sauron submit -c scripts/sauron/jobs/sae-quality-partc-ftcopy.yaml scripts/sauron/sae_quality.sauron
+
+name: sae-quality-partc-ftcopy
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# Medido: sae-quality-partc-base (3635) pico 2,8 GiB; 2,8 / 0,7 = 4,0 -> 4g.
+memory: 4g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  LAYER: "enc_17"
+  NAME: "en_ft_enc17_k32_copy"
+  DOMAIN_DIR: "data/activations/partc_tokens/ft"
+  EXTRA_ARGS: "--sources en --max-len 1024 --head-max-len 256 --repo convaiinnovations/laya --subfolder typed-decisions --revision e333cb7c823cd1787276228260f56d02fbf5180b"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

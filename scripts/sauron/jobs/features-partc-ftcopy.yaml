@@ -1,0 +1,26 @@
+# Parte C, 2ª passada: atribuição e estatísticas da CÓPIA do SAE lida no fine-tuned; saída em en_ft_copy_enc17, sem cartões.
+#
+#   sauron submit -c scripts/sauron/jobs/features-partc-ftcopy.yaml scripts/sauron/features.sauron
+
+name: features-partc-ftcopy
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# Medido: features-partc-ft (3637) pico 3,4 GiB; 3,4 / 0,7 = 4,9 -> 5g.
+memory: 5g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  LAYER: "enc_17"
+  NAME: "en_ft_enc17_k32_copy"
+  OUT_NAME: "en_ft_copy_enc17"
+  TOKENS_DIR: "data/activations/partc_tokens/ft"
+  STAGE3_DIR: "data/activations/partc/ft"
+  OOF_ARG: "none"
+  SKIP_CARDS: "1"
+  MODEL_ARGS: "--repo convaiinnovations/laya --subfolder typed-decisions --revision e333cb7c823cd1787276228260f56d02fbf5180b"
+  PREDICT_ARGS: "--max-len 1024 --head-max-len 256"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

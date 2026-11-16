@@ -1,0 +1,23 @@
+# Parte C, 2ª passada: comparação com a cópia do SAE no lado do fine-tuned e pareamento por vizinho mútuo (emenda 2). A 1ª passada (job 3638, SAE do base nos dois lados) fica em results/sae_features/part_c.
+#
+#   sauron submit -c scripts/sauron/jobs/partc-compare-copy.yaml scripts/sauron/partc_compare.sauron
+
+name: partc-compare-copy
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# Medido: partc-compare (3638) pico 2,8 GiB; 2,8 / 0,7 = 4,0 -> 4g.
+memory: 4g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  LAYER: "enc_17"
+  NAME: "en_base_enc17_k32"
+  SAE_FT_NAME: "en_ft_enc17_k32_copy"
+  ATTR_BASE: "results/sae_features/en_base_enc17_k32"
+  ATTR_FT: "results/sae_features/en_ft_copy_enc17"
+  COMPARE_OUT: "results/sae_features/part_c_sae_ft"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"
