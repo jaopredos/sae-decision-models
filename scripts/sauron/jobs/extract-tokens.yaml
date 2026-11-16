@@ -8,7 +8,8 @@ name: sae-extract-tokens
 image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
 gpus: 1
 vram: 89
-# 1ª ESTIMATIVA (gravação por memmap; o page cache conta no cgroup). Reajustar pelo pico medido.
+# Medido: job 3605 (completo) pico 8,0 GiB, exatamente no teto; é o page cache da gravação por memmap (7 GB de
+# saída), que o cgroup conta e pode reclamar, e o job terminou. O curto (3603) deu 3,9 GiB. Mantido em 8g.
 memory: 8g
 cpus: 4
 max_time: 1h

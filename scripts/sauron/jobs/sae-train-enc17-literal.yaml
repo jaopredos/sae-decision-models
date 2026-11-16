@@ -7,10 +7,12 @@ name: sae-train-enc17-literal
 image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
 gpus: 1
 vram: 89
-# 1ª ESTIMATIVA (reajustar pelo pico do sae-train-smoke).
-memory: 8g
+# Medido no job curto 3609 (mesma largura, 2M tokens): pico 2,5 GiB, a ~180-260 mil tokens/s na B200. O completo
+# carrega mais domínio e texto: 1ª ESTIMATIVA de 6g; reajustar pelo pico do completo (pico / 0,7).
+memory: 6g
 cpus: 4
-max_time: 3h
+# 50M tokens / ~200 mil tokens/s = ~4 min de treino, mais a geração das ativações; 1h dá folga larga.
+max_time: 1h
 
 workspace: sae-decision-models
 

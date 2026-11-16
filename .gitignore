@@ -9,3 +9,5 @@ results/probe_typed/smoke/
 .claude/
 data/corpus*/
 checkpoints/
+results/*_smoke/
+results/probe_oof_smoke/

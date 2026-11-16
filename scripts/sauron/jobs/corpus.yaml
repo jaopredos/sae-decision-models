@@ -7,8 +7,8 @@ name: sae-corpus
 image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
 gpus: 1
 vram: 89
-# 1ª ESTIMATIVA: o texto fica em memória (~250 MB) mais o tokenizer e os lotes. Reajustar pelo pico medido.
-memory: 4g
+# Medido: job 3606 (completo) pico 1,8 GiB; 3604 (curto) 0,9 GiB. 1,8 / 0,7 = 2,6 -> 3g.
+memory: 3g
 cpus: 4
 max_time: 1h
 
