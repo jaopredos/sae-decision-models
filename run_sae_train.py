@@ -148,6 +148,8 @@ def main():
     ap.add_argument("--repo", default=LAYA_REPO)
     ap.add_argument("--subfolder", default=LAYA_SUBFOLDER)
     ap.add_argument("--revision", default=LAYA_REVISION)
+    ap.add_argument("--sources", default="", help="comma list of corpus sources to use (default: all), e.g. en")
+    ap.add_argument("--init-sae", default=None, help="warm start from this SAE (keeps its scale; the massive threshold is recomputed for this model)")
     ap.add_argument("--resume", action="store_true")
     ap.add_argument("--smoke", action="store_true")
     args = ap.parse_args()
@@ -167,6 +169,8 @@ def main():
     dom_fit, dom_dev, thr, dom_stats = domain_tensors(Path(args.domain_dir), args.layer, device, args.smoke,
                                                       args.massive_mult)
     df = pd.read_parquet(args.corpus)
+    if args.sources:
+        df = df[df["source"].isin(args.sources.split(","))]
     n_dom = int(round(args.batch * args.domain_frac))
     n_gen = args.batch - n_dom
     total_steps = math.ceil(args.total_tokens / args.batch)
@@ -197,6 +201,13 @@ def main():
         ck = torch.load(ck_path, map_location=device, weights_only=False)
         sae.load_state_dict(ck["sae"]); opt.load_state_dict(ck["opt"]); start_step = ck["step"]
         print(f"[sae] resumed at step {start_step} (data stream restarts; not bit-identical)", flush=True)
+    elif args.init_sae:
+        from src.sae import load_sae
+        init = load_sae(args.init_sae, str(device))
+        assert init.d_in == hidden and init.n_latents == n_latents
+        sae.load_state_dict(init.state_dict())
+        sae.massive_threshold.fill_(thr)  # the rule is per model: threshold from THIS model's domain tokens
+        print(f"[sae] warm start from {args.init_sae} (keeps its scale {float(sae.scale):.5f}; threshold set to {thr:.1f})", flush=True)
     else:
         first = torch.cat([dom_fit[torch.randint(0, len(dom_fit), (20_000,), device=device)],
                            buf.buf[:80_000]]).float()

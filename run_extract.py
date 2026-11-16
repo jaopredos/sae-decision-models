@@ -21,7 +21,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from src.activations import LAYA_REVISION, extract_case, layer_modules, load_agent
+from src.activations import LAYA_REPO, LAYA_REVISION, LAYA_SUBFOLDER, extract_case, layer_modules, load_agent
 from src.datasets import TYPED_DECISIONS_REVISION, load_typed_cases, typed_dev_ids
 from src.models import set_all_seeds
 
@@ -69,7 +69,15 @@ def main():
     ap.add_argument("--limit", type=int, default=0, help="first N cases only (0 = all)")
     ap.add_argument("--device", default=None)
     ap.add_argument("--out", default=str(REPO_ROOT / "data" / "activations" / "typed_decisions"))
+    # stage 5 (part C): other checkpoints and a common input configuration; defaults keep stage 3 unchanged
+    ap.add_argument("--repo", default=LAYA_REPO)
+    ap.add_argument("--subfolder", default=LAYA_SUBFOLDER)
+    ap.add_argument("--revision", default=LAYA_REVISION)
+    ap.add_argument("--max-len", type=int, default=0)
+    ap.add_argument("--head-max-len", type=int, default=0)
     args = ap.parse_args()
+    subfolder = None if args.subfolder in ("", "none", "None") else args.subfolder
+    pk = {k: v for k, v in (("max_len", args.max_len), ("head_max_len", args.head_max_len)) if v}
 
     set_all_seeds()
     out_dir = Path(args.out) / args.split
@@ -80,7 +88,7 @@ def main():
         cases = cases[: args.limit]
     dev_ids = typed_dev_ids() if args.split == "train" else set()
 
-    agent = load_agent(args.device)
+    agent = load_agent(args.device, args.repo, subfolder, args.revision)
     modules = layer_modules(agent.model)
     cfg = agent.model.encoder.config
     print(f"[extract] split={args.split} cases={len(cases)} device={agent.device} "
@@ -93,7 +101,7 @@ def main():
     vectors = {label: [] for label, _ in modules}
     t0 = time.time()
     for n, case in enumerate(cases, 1):
-        res = extract_case(agent, modules, case)
+        res = extract_case(agent, modules, case, pk)
         for d in res["decisions"]:
             d["is_dev"] = case["case_id"] in dev_ids
             d["decision_idx"] = len(decisions)
@@ -138,7 +146,7 @@ def main():
         "split": args.split, "n_cases": len(cases), "limit": args.limit,
         "n_decisions": len(dec), "n_markers": len(mk), "hidden_size": cfg.hidden_size,
         "layers": [label for label, _ in modules],
-        "laya_revision": LAYA_REVISION, "dataset_revision": TYPED_DECISIONS_REVISION,
+        "laya_revision": args.revision, "laya_repo": args.repo, "laya_subfolder": subfolder, "predict_kwargs": pk, "dataset_revision": TYPED_DECISIONS_REVISION,
         "device": str(agent.device), "autocast_dtype_5_rows": str(agent.dtype_for(5)),
         "max_len": agent.cfg.get("max_len"), "head_max_len": agent.cfg.get("head_max_len"),
         "versions": {"python": platform.python_version(), "torch": torch.__version__,
