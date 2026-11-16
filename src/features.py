@@ -118,3 +118,41 @@ def top_by(df: pd.DataFrame, column: str, k: int = 30, ascending: bool = False, 
     if q_max is not None:
         d = d[d["q_bh"] <= q_max]
     return d.sort_values(column, ascending=ascending).head(k)
+
+
+@torch.no_grad()
+def cmh_table(acts: torch.Tensor, y: torch.Tensor, strata: torch.Tensor, min_support: int = 20) -> pd.DataFrame:
+    """Cochran-Mantel-Haenszel test of "feature active" vs outcome `y`, controlling for `strata`.
+
+    The plain enrichment in `enrichment_table` mixes a feature's link to the outcome with its link to whatever
+    defines the strata (here: the question and the option Laya picked, which carry most of Laya's prior bias).
+    CMH pools the 2x2 tables of the strata: z = sum(a_s - E_s) / sqrt(sum V_s) (a_s = active and y, E_s and V_s the
+    hypergeometric mean and variance), two-sided normal p, and the Mantel-Haenszel common odds ratio. Strata of
+    size 1 are ignored. `strata` [N] holds integer ids 0..S-1."""
+    active = (acts.float() > 0).float()
+    n_s = int(strata.max()) + 1
+    onehot = torch.zeros(len(strata), n_s, device=acts.device)
+    onehot[torch.arange(len(strata), device=acts.device), strata] = 1.0
+    yf = y.float()
+    N = onehot.sum(0)                                   # [S]
+    m1 = onehot.T @ yf                                  # y in the stratum
+    n1 = active.T @ onehot                              # [F, S] active in the stratum
+    a = (active * yf[:, None]).T @ onehot               # [F, S] active and y
+    ok = N > 1
+    Ns = N.clamp_min(2)
+    e = n1 * (m1 / Ns)
+    v = n1 * (Ns - n1) * (m1 * (Ns - m1)) / (Ns ** 2 * (Ns - 1))
+    e, v, a = e * ok, v * ok, a * ok
+    b, c = n1 - a, m1[None, :] - a
+    d = Ns[None, :] - n1 - m1[None, :] + a
+    num = (a * d / Ns).sum(1); den = (b * c / Ns).sum(1)
+    var = v.sum(1)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        z = ((a - e).sum(1) / var.sqrt()).cpu().numpy()
+        orr = (num / den).cpu().numpy()
+    n_act = n1.sum(1).cpu().numpy()
+    p = 2 * stats.norm.sf(np.abs(z))
+    supported = (n_act >= min_support) & (var.cpu().numpy() > 0)
+    p = np.where(supported, p, np.nan)
+    return pd.DataFrame({"feature": np.arange(acts.shape[1]), "cmh_z": np.where(supported, z, np.nan),
+                         "cmh_or": np.where(supported, orr, np.nan), "cmh_p": p, "cmh_q": bh(p)})

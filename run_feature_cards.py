@@ -7,6 +7,8 @@ Usage: python run_feature_cards.py --sae checkpoints/sae/ml_enc17_k32/sae.pt --l
 
 Criteria (rankings come from the discovery set only; the test appears as a replication column):
   pred_error, corr_error, state_error                  error-rate enrichment per view (q <= 0.05, by lift)
+  <view>_error_stratified, <view>_probe_right_laya_wrong_stratified  same, ranked by the CMH z controlling for the
+                                                        question and the option Laya picked
   pred_probe_right_laya_wrong, corr_probe_right_laya_wrong
                                                         same, among decisions the out-of-fold probe gets right
   attribution_toward_wrong, attribution_toward_correct most negative / positive mean gradient attribution at the
@@ -47,6 +49,9 @@ def pick_features(stats_dir: Path, top: int) -> dict:
             ranked = (sig if len(sig) >= top else t).sort_values(["q_bh", "p_two_sided"] if len(sig) < top else "lift",
                                                                  ascending=[True, True] if len(sig) < top else False)
             crit[f"{view}_{kind}"] = ranked.head(top)["feature"].tolist()
+            if "cmh_q" in t:  # controlling for the question and the option Laya picked
+                st = t[(t.cmh_q <= 0.05) & (t.cmh_z > 0)].sort_values("cmh_z", ascending=False)
+                crit[f"{view}_{kind}_stratified"] = st.head(top)["feature"].tolist()
     f = stats_dir / "feature_stats_attribution.parquet"
     if f.exists():
         t = pd.read_parquet(f)
@@ -176,11 +181,11 @@ def main():
             s = t[(t.feature == f) & (t.stratum == "all")].set_index("split")
             if s.empty:
                 continue
-            lines.append(f"**{view} / {kind}**\n\n| split | decisões | ativas | ativas e Laya errou | taxa | lift | q (BH) |\n|---|---|---|---|---|---|---|")
+            lines.append(f"**{view} / {kind}**\n\n| split | decisões | ativas | ativas e Laya errou | taxa | lift | q (BH) | OR (CMH) | q (CMH) |\n|---|---|---|---|---|---|---|---|---|")
             for sp in ("discovery", "dev", "test"):
                 if sp in s.index:
                     r = s.loc[sp]
-                    lines.append(f"| {sp} | {int(r.n_decisions)} | {int(r.n_active)} | {int(r.n_active_y)} | {r.rate_active:.3f} | {r.lift:.2f} | {r.q_bh:.3g} |")
+                    lines.append(f"| {sp} | {int(r.n_decisions)} | {int(r.n_active)} | {int(r.n_active_y)} | {r.rate_active:.3f} | {r.lift:.2f} | {r.q_bh:.3g} | {r.get('cmh_or', float('nan')):.2f} | {r.get('cmh_q', float('nan')):.3g} |")
             lines.append("")
         for v, c in conf.items():
             r = c[c.feature == f]

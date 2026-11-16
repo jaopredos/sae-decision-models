@@ -19,7 +19,10 @@ Writes, under <out>/<name>/:
   feature_stats_prior_bias.parquet, prior_bias_summary.json
   feature_stats_attribution.parquet                   if --attr-dir has the gradient-attribution arrays
   decision_views.parquet                              per-decision metadata used (pred/gold/err/probe/subset)
-Each stats file has one line per (feature, split, stratum); strata are all, qtype=*, workflow=*.
+Each stats file has one line per (feature, split, stratum); strata are all, qtype=*, workflow=*. Besides the plain
+enrichment it carries cmh_z / cmh_or / cmh_p / cmh_q: the Cochran-Mantel-Haenszel test controlling for the question
+and the option Laya picked (what carries most of Laya's prior bias), so a feature that only says "this is the option
+Laya likes" does not rank high there.
 """
 import argparse
 import json
@@ -102,8 +105,11 @@ def stats_for(views, meta, pool: np.ndarray, subset_masks, min_support, device):
             if m.sum() < 2 * min_support:
                 continue
             idx = torch.from_numpy(np.flatnonzero(m)).to(device)
+            keys = (meta["question_id"] + "|" + meta["pred_idx"].astype(str)).to_numpy()[np.flatnonzero(m)]
+            codes = torch.from_numpy(pd.factorize(keys)[0]).to(device)
             for v in VIEWS:
                 t = F.enrichment_table(views[v][idx], y_all[idx], min_support)
+                t = t.merge(F.cmh_table(views[v][idx], y_all[idx], codes, min_support), on="feature")
                 t.insert(0, "stratum", s_name); t.insert(0, "split", sub_name)
                 out[v].append(t)
     return {v: pd.concat(t, ignore_index=True) for v, t in out.items() if t}

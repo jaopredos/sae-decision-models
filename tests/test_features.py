@@ -71,3 +71,37 @@ def test_confusion_enrichment_finds_the_planted_class():
     acts[:, 2] = ((cls == 2) & (torch.rand(n, generator=g) < 0.9)).float()
     out = confusion_enrichment(acts, cls, n_classes=4, min_support=5)
     assert out.loc[2, "top_confusion_class"] == 2 and out.loc[2, "top_confusion_lift"] > 3
+
+
+from src.features import cmh_table
+
+
+def test_cmh_removes_an_association_that_only_goes_through_the_strata():
+    """Simpson-style: the feature lives in stratum 1 and so does the high outcome rate, but inside each stratum they are independent."""
+    g = torch.Generator().manual_seed(2)
+    n = 4000
+    strata = (torch.rand(n, generator=g) < 0.5).long()
+    y = torch.rand(n, generator=g) < torch.where(strata == 1, 0.85, 0.15)
+    act = (torch.rand(n, generator=g) < torch.where(strata == 1, 0.7, 0.05)).float()
+    acts = act[:, None]
+    naive = enrichment_table(acts, y, min_support=20)
+    cmh = cmh_table(acts, y, strata, min_support=20)
+    assert naive.loc[0, "q_bh"] < 1e-6 and naive.loc[0, "lift"] > 1.3
+    assert cmh.loc[0, "cmh_p"] > 0.01 and 0.7 < cmh.loc[0, "cmh_or"] < 1.4
+
+
+def test_cmh_keeps_a_within_strata_association_and_matches_a_manual_computation():
+    g = torch.Generator().manual_seed(3)
+    n = 5000
+    strata = torch.randint(0, 4, (n,), generator=g)
+    act = (torch.rand(n, generator=g) < 0.3).float()
+    p_y = 0.3 + 0.1 * strata + 0.25 * act                 # real effect inside every stratum
+    y = torch.rand(n, generator=g) < p_y
+    res = cmh_table(act[:, None], y, strata, min_support=20)
+    assert res.loc[0, "cmh_q"] < 1e-6 and res.loc[0, "cmh_or"] > 1.5 and res.loc[0, "cmh_z"] > 0
+    num = var = 0.0
+    a_, y_, s_ = act.numpy() > 0, y.numpy(), strata.numpy()
+    for s in range(4):
+        m = s_ == s; N = m.sum(); n1 = a_[m].sum(); m1 = y_[m].sum(); aa = (a_[m] & y_[m]).sum()
+        num += aa - n1 * m1 / N; var += n1 * (N - n1) * m1 * (N - m1) / (N ** 2 * (N - 1))
+    assert abs(res.loc[0, "cmh_z"] - num / np.sqrt(var)) < 1e-4
