@@ -31,3 +31,12 @@ explicit = true
 
 [tool.uv.sources]
 torch = [{ index = "pytorch-cu132", marker = "sys_platform == 'linux'" }]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
