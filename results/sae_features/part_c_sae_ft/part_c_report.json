@@ -1,0 +1,36 @@
+{
+  "identical_inputs": {
+    "train": {
+      "tokens_a": 1748500,
+      "tokens_b": 1748500,
+      "identical_token_ids_and_roles": true
+    },
+    "test": {
+      "tokens_a": 582370,
+      "tokens_b": 582370,
+      "identical_token_ids_and_roles": true
+    }
+  },
+  "fve_base_sae": {
+    "on_base": {
+      "all_non_massive": 0.9121961114915191,
+      "markers": 0.9129714282828167
+    },
+    "on_finetuned": {
+      "all_non_massive": 0.7743153823840143,
+      "markers": 0.6517814624599467
+    }
+  },
+  "fve_drop": 0.13788072910750482,
+  "fve_ft_with_sae_ft": {
+    "all_non_massive": 0.9148283960493259,
+    "markers": 0.9223985357425841
+  },
+  "paired_features": {
+    "paired": 14893,
+    "total": 16384,
+    "cos_min": 0.7,
+    "median_cos_of_nearest": 0.9401489496231079
+  },
+  "n_features_ci_excludes_zero_discovery": 915
+}

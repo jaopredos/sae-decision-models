@@ -1,0 +1,10 @@
+model_config,split,subset,n,accuracy
+base_default_512/192,train,all,6000,0.3615
+base_default_512/192,train,dev,900,0.34444444444444444
+base_default_512/192,test,all,2000,0.3625
+base_common_1024/256,train,all,6000,0.3606666666666667
+base_common_1024/256,train,dev,900,0.3433333333333333
+base_common_1024/256,test,all,2000,0.363
+finetuned_1024/256,train,all,6000,0.8538333333333333
+finetuned_1024/256,train,dev,900,0.8566666666666667
+finetuned_1024/256,test,all,2000,0.7685
