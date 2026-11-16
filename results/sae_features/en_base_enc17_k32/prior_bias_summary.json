@@ -1,0 +1,122 @@
+[
+  {
+    "hypothesis": "score_highest_level",
+    "subset": "discovery",
+    "n": 2040,
+    "p_laya_picks": 0.043137254901960784,
+    "p_gold_is": 0.25980392156862747,
+    "diff": -0.21666666666666667,
+    "laya_picks_wilson_lo": 0.035146086949287836,
+    "laya_picks_wilson_hi": 0.05284585919761514
+  },
+  {
+    "hypothesis": "score_highest_level",
+    "subset": "dev",
+    "n": 360,
+    "p_laya_picks": 0.030555555555555555,
+    "p_gold_is": 0.25555555555555554,
+    "diff": -0.22499999999999998,
+    "laya_picks_wilson_lo": 0.017145635257466024,
+    "laya_picks_wilson_hi": 0.053878678619781656
+  },
+  {
+    "hypothesis": "score_highest_level",
+    "subset": "test",
+    "n": 800,
+    "p_laya_picks": 0.03125,
+    "p_gold_is": 0.26875,
+    "diff": -0.2375,
+    "laya_picks_wilson_lo": 0.02125511951766314,
+    "laya_picks_wilson_hi": 0.04572524079212924
+  },
+  {
+    "hypothesis": "choice_majority_label",
+    "subset": "discovery",
+    "n": 1541,
+    "p_laya_picks": 0.1972744970798183,
+    "p_gold_is": 0.47306943543153795,
+    "diff": -0.27579493835171964,
+    "laya_picks_wilson_lo": 0.17816884204512054,
+    "laya_picks_wilson_hi": 0.21788574374542272
+  },
+  {
+    "hypothesis": "choice_majority_label",
+    "subset": "dev",
+    "n": 259,
+    "p_laya_picks": 0.26640926640926643,
+    "p_gold_is": 0.4826254826254826,
+    "diff": -0.21621621621621617,
+    "laya_picks_wilson_lo": 0.21626897860139915,
+    "laya_picks_wilson_hi": 0.32337771355083256
+  },
+  {
+    "hypothesis": "choice_majority_label",
+    "subset": "test",
+    "n": 600,
+    "p_laya_picks": 0.19833333333333333,
+    "p_gold_is": 0.41833333333333333,
+    "diff": -0.22,
+    "laya_picks_wilson_lo": 0.16839010937277255,
+    "laya_picks_wilson_hi": 0.2321149237352479
+  },
+  {
+    "hypothesis": "noul_true",
+    "subset": "discovery",
+    "n": 1519,
+    "p_laya_picks": 0.65174456879526,
+    "p_gold_is": 0.5102040816326531,
+    "diff": 0.14154048716260692,
+    "laya_picks_wilson_lo": 0.6274301592390512,
+    "laya_picks_wilson_hi": 0.6752933807535519
+  },
+  {
+    "hypothesis": "noul_true",
+    "subset": "dev",
+    "n": 281,
+    "p_laya_picks": 0.701067615658363,
+    "p_gold_is": 0.43416370106761565,
+    "diff": 0.2669039145907473,
+    "laya_picks_wilson_lo": 0.6451223581075236,
+    "laya_picks_wilson_hi": 0.7515893581586397
+  },
+  {
+    "hypothesis": "noul_true",
+    "subset": "test",
+    "n": 600,
+    "p_laya_picks": 0.6733333333333333,
+    "p_gold_is": 0.5083333333333333,
+    "diff": 0.16500000000000004,
+    "laya_picks_wilson_lo": 0.6348065604353823,
+    "laya_picks_wilson_hi": 0.709654636010838
+  },
+  {
+    "hypothesis": "noul_false",
+    "subset": "discovery",
+    "n": 1519,
+    "p_laya_picks": 0.34825543120473995,
+    "p_gold_is": 0.4897959183673469,
+    "diff": -0.14154048716260698,
+    "laya_picks_wilson_lo": 0.324706619246448,
+    "laya_picks_wilson_hi": 0.37256984076094873
+  },
+  {
+    "hypothesis": "noul_false",
+    "subset": "dev",
+    "n": 281,
+    "p_laya_picks": 0.298932384341637,
+    "p_gold_is": 0.5658362989323843,
+    "diff": -0.2669039145907473,
+    "laya_picks_wilson_lo": 0.2484106418413602,
+    "laya_picks_wilson_hi": 0.3548776418924764
+  },
+  {
+    "hypothesis": "noul_false",
+    "subset": "test",
+    "n": 600,
+    "p_laya_picks": 0.32666666666666666,
+    "p_gold_is": 0.49166666666666664,
+    "diff": -0.16499999999999998,
+    "laya_picks_wilson_lo": 0.290345363989162,
+    "laya_picks_wilson_hi": 0.3651934395646177
+  }
+]

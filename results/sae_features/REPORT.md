@@ -1,0 +1,181 @@
+# SAE e features que explicam o erro do Laya no typed-decisions (etapas 4 e 5)
+
+Tudo aqui é **correlacional**, exceto a fidelidade a jusante (que mede o SAE, não as features). A ablação causal **não** foi rodada; o
+módulo `src/sae_intervention.py` está pronto para ela. Critérios e limiares foram fixados antes dos jobs em `PROTOCOLO.md`; as três
+emendas (feitas por causa do que os dados mostraram) estão datadas lá e resumidas na seção 2. As tabelas completas, geradas dos artefatos
+sem interpretação, estão em `REPORT_tables.md`.
+
+## Resumo
+
+- **Camadas:** `enc_17` (melhor do probe no dev, 0,597) e `enc_08` (primeira camada com ganho claro sobre o prior do dev: 0,583 contra 0,510).
+  A regra literal "primeira que passa do prior" degenera (25 de 26 camadas já passam).
+- **Os SAEs reconstroem bem e são fiéis a jusante.** Trocar a ativação da camada pela reconstrução do SAE muda a acurácia do Laya no dev em
+  +0,2 p.p. (`enc_08`) e −0,7 p.p. (`enc_17`), com KL de 0,065 e 0,013 nat (limiar do protocolo: 3 p.p. e 0,10); trocar pela média ou por zeros dá KL ≈ 0,40.
+  FVE no dev: 0,954 (`enc_08`) e 0,900 (`enc_17`). Um sinalizador disparou: em `enc_08` a FVE só nos marcadores de opção é 0,777 (0,18 abaixo da geral).
+- **O viés de prior do Laya é forte e replica em dev e teste:** em `choice` escolhe a classe majoritária 17% das vezes (gabarito: 47%) e prefere o índice 3
+  (47% contra 9%); em `noul` responde `true` em 76–77% (gabarito: 43–51%); em `score` subescolhe o nível mais alto (20% contra 26%).
+- **O ranking ingênuo de features por taxa de erro mede principalmente qual opção Laya escolheu**, não "entendimento do caso": na visão do marcador da opção
+  prevista, 364 features significativas viram 20 sob o teste estratificado (pergunta × opção). O que sobrevive replica em direção (top-20 por |z| com 75–100% de
+  concordância de sinal em dev e teste), mas é fraco e, nos exemplos, **majoritariamente lexical** (tokens como ` river`, `_`, ` of`, ` over`). Não atribuí rótulos.
+- **A informação mal lida existe e é mensurável:** 2.113 das 6.000 decisões de treino (probe fora da dobra) e 702 das 2.000 de teste são "o probe acerta, o Laya erra".
+- **Parte C (base × fine-tuned em inglês):** entradas idênticas confirmadas; a configuração comum não distorce o base (0,3625 contra 0,3630). No base, marcadores massivos
+  (fora do SAE) ocorrem **só na opção `true` das perguntas `noul`** (em 1/3 delas); nessas, o base responde `true` em 90–92% dos casos quando esse marcador é massivo e em 54–55% quando não é
+  (no fine-tuned a relação some: 47% contra 56–57%). Mas atenção: a atribuição por gradiente no fine-tuned explica quase nada de h·g (0–15%) e deve ser lida como diagnóstico.
+
+## 1. Camadas escolhidas e por quê
+
+Probe linear por camada no `laya-multilingual` (etapa 3, `results/probe_typed/`), seleção no dev (180 casos, 900 decisões):
+
+| camada | acurácia no dev | KL no dev |
+|---|---|---|
+| `enc_12` | 0,597 | 0,290 |
+| `enc_17` | 0,597 | 0,288 |
+| `enc_08` | 0,583 | 0,300 |
+
+- `enc_17`: melhor no dev; empata com `enc_12` e vence no desempate pela menor KL.
+- `enc_08`: o prior do dev (frequência do rótulo por (workflow, pergunta) em treino-menos-dev) acerta **0,510**; 25 de 26 camadas já o superam, `enc_01` por só 2,6 p.p.
+  (dentro do ruído de 900 decisões). `enc_08` é o início do patamar (+7 p.p.).
+- O prior aparece com três valores (0,461 do enunciado, sem origem identificada; 0,483 no teste; 0,510 no dev). A justificativa das camadas usa só o do dev.
+- Em inglês (Parte C), a camada vem do probe do **base** no dev: `enc_17` (0,647), pela emenda 2.
+
+## 2. Protocolo e desvios declarados
+
+- **Dados:** descoberta = treino-menos-dev (1.020 casos, 5.100 decisões); dev = verificação; teste = só replicação. Nenhuma camada, limiar ou feature foi escolhida no teste.
+- **Corpus do SAE (50M tokens):** 10% domínio (prompts de treino-menos-dev repetidos, ~3,2 épocas de 1,55M tokens), 45% inglês (FineWeb, `sample-10BT`), 45% multilíngue
+  (FineWeb-2, 12 idiomas; o FineWeb-2 não tem inglês). Ativações geradas durante o treino (streaming), sem guardar ~150 GB.
+- **SAE:** TopK (Gao et al.), k = 32, 16 × hidden latentes (12.288 no multilíngue; 16.384 em inglês), AuxK, decoder de norma unitária, seed 0.
+- **Emenda 1 (antes de qualquer job): tokens massivos.** No `enc_17` os `[CLS]` têm norma ~19.000 (mediana 93) e ~4,8% dos tokens comuns também são "massivos"
+  (norma > 5× a mediana). A FVE literal fica ~0,999 de graça. O SAE treina só em tokens não massivos; a rodada literal (todos os tokens) foi mantida como diagnóstico (seção 3).
+- **Emenda 2 (antes da Parte C):** pareamento de features por vizinho mais próximo mútuo (cosseno ≥ 0,7) em vez de húngaro (16.384² não é prático); camada em inglês pelo dev.
+- **Emenda 3 (depois de ver o `enc_08`):** o teste de Cochran-Mantel-Haenszel (CMH) estratifica pela identidade da opção a que a visão se refere. Foi uma escolha feita
+  **depois** de ver contagens agregadas (sem selecionar feature alguma), então é exploratória; a primeira passada (estrato pergunta × opção prevista em todas as visões)
+  está nas colunas `cmh_qp_*` e as tabelas mostram as duas.
+
+## 3. Qualidade dos SAEs
+
+Dev (900 decisões) e 1M de tokens de texto genérico retido. "Substituir" = trocar a ativação da camada pela reconstrução; escala = trocar pela média dos marcadores.
+
+| SAE | FVE dev (não massivos) | FVE só marcadores | FVE genérico | Δ acurácia, substituir todos (p.p.) | KL, todos | Δ acurácia, só marcadores | KL, só marcadores | sinalizadores |
+|---|---|---|---|---|---|---|---|---|
+| `ml_enc08_k32` | 0,954 | 0,777 | 0,830 | +0,2 | 0,0645 | +0,2 | 0,0005 | FVE marcadores 0,18 abaixo da geral |
+| `ml_enc08_k32_dom20` (20% de domínio) | 0,963 | 0,861 | 0,828 | −1,0 | 0,0503 | −0,2 | 0,0003 | FVE marcadores 0,102 abaixo (limite 0,10) |
+| `ml_enc17_k32` | 0,900 | 0,813 | 0,761 | −0,7 | 0,0128 | −0,2 | 0,0020 | nenhum |
+| `ml_enc17_k32_literal` (todos os tokens) | 0,898 (0,9997 literal) | 0,807 | 0,755 | +0,7 | 0,0126 | +0,3 | 0,0014 | nenhum |
+| `en_base_enc17_k32` (inglês) | 0,912 | 0,913 | 0,719 | −0,2 | 0,0059 | 0,0 | 0,0002 | 3,2% dos marcadores são massivos (> 1%) |
+| `en_ft_enc17_k32_copy` (cópia no fine-tuned)* | 0,915 | — | 0,733 | −1,6 | 0,0019 | −0,2 | 0,0001 | 4,5% dos marcadores são massivos |
+
+\* O dev é contaminado para o fine-tuned (acurácia ~85%); só vale a variação, não o nível.
+Como escala, trocar os marcadores pela média dá KL 0,096 (`enc_08`), 0,188 (`enc_17`), 0,077 (base em inglês) e 0,016 (fine-tuned).
+Latentes mortas (sem disparo nos últimos 5M tokens): 0% em `enc_08`, 0,02% em `enc_17`, 0% em inglês.
+
+**Leituras que corrigem o que eu esperava:**
+1. **A exclusão de tokens massivos quase não mudou a qualidade nos tokens comuns:** o SAE literal de `enc_17` (que treinou com os massivos) reconstrói os não massivos tão bem
+   quanto o treinado sem eles (0,898 contra 0,900) e tem a mesma fidelidade (KL 0,0126 contra 0,0128). Eu tinha previsto que a MSE dominada pelos massivos atrapalharia o aprendizado
+   dos tokens comuns; com esta largura os dados não mostram esse efeito. O que a emenda 1 corrigiu foi a **métrica**: 0,9997 de FVE literal é trivial.
+2. **A FVE só dos marcadores usa a variância dentro do grupo** (todos são `[MASK]`), que é pequena; por isso é mais severa que as demais, e a fidelidade a jusante (KL 0,0005 em `enc_08`) não indica
+   problema. A variante com 20% de domínio melhora a FVE dos marcadores (0,777 → 0,861) sem custo no texto genérico, mas o sinalizador ficou formalmente disparado por 0,002.
+   O SAE original é o primário em todas as análises; a variante não foi usada para estatísticas de features.
+3. Em `enc_08` nenhum token é massivo (FVE literal = FVE não massiva); em `enc_17` os marcadores multilíngues também não são (0 de 21.300).
+
+## 4. Viés de prior do Laya (independe do SAE)
+
+Fração de decisões em que o Laya escolhe a opção da hipótese, contra a do gabarito (`prior_bias_summary.json`):
+
+| hipótese | descoberta (Laya / gabarito) | dev | teste |
+|---|---|---|---|
+| `choice`: classe majoritária da pergunta | 0,173 / 0,473 | 0,212 / 0,483 | 0,177 / 0,418 |
+| `noul`: responde `true` | 0,757 / 0,510 | 0,769 / 0,434 | 0,772 / 0,508 |
+| `score`: nível mais alto | 0,196 / 0,260 | 0,153 / 0,256 | 0,176 / 0,269 |
+
+Distribuição das respostas na descoberta (previsto / gabarito): `choice` índice 0: 0,29/0,18; 1: 0,15/0,21; 2: 0,05/0,45; **3: 0,47/0,09**; `noul` `false` 0,24/0,49, `true` 0,76/0,51;
+`score` nível 1: 0,44/0,26 e nível 3: 0,19/0,30. Das três hipóteses do pedido, a de severidade alta em `score` **não** se confirma (o Laya subestima); as outras duas, sim, nas três divisões.
+
+## 5. Features no multilíngue (`enc_08` e `enc_17`)
+
+**Três visões** por decisão: ativação no marcador da opção prevista (`pred`), no da correta (`corr`) e o máximo sobre os tokens do estado (`state`), em versão binária e ponderada; critério
+"Laya errou" (`error`) e "Laya errou entre as decisões que o probe fora da dobra acerta" (`probe_right_laya_wrong`).
+
+**O ranking ingênuo é dominado pela identidade da opção.** As 12 features de maior lift na visão `pred` do `enc_08` têm taxa de erro ~100% e várias compartilham a mesma confusão
+(`action|3>1`, 111 decisões, lift ~21): são features no marcador da opção 3 quando o Laya a escolhe, e o Laya erra sempre que escolhe essa opção em `action`. Por isso o CMH:
+
+| `enc_08`, descoberta | com suporte | ingênuo q≤0,05 | CMH (estrato da visão) mais erro / menos erro | CMH 1ª passada |
+|---|---|---|---|---|
+| `pred` / `error` | 543 | 364 | **9 / 11** | 9 / 11 |
+| `corr` / `error` | 625 | 476 | 68 / 65 | 221 / 198 |
+| `state` / `error` | 10.213 | 3.226 | 324 / 544 | 42 / 77 |
+| `pred` / probe acerta | 468 | 348 | 43 / 43 | 43 / 43 |
+| `corr` / probe acerta | 472 | 368 | 18 / 13 | 151 / 147 |
+| `state` / probe acerta | 9.441 | 3.869 | 979 / 802 | 345 / 557 |
+
+Em `enc_17` o padrão é o mesmo (`pred`/`error`: 334 → 11/16; `state`/`error`: 3.584 → 288/569; tabela completa em `REPORT_tables.md`). No `enc_08`, a visão `corr` mostrou na 1ª passada que o estrato estava errado para ela
+(476 → 419 sobreviventes); com o estrato certo (a opção correta) sobram 133 (68 + 65).
+
+**Replicação, sem depender da seleção** (todas as features com suporte na descoberta e no outro lado): Spearman de z entre descoberta e teste 0,42–0,76 em `enc_08` e 0,44–0,77 em `enc_17`
+(o do lift ingênuo é 0,52–0,97, alto porque é dominado pela identidade da opção); concordância de sinal nas 20 features de maior |z|: 95–100% (80% em `corr`/probe acerta no teste do `enc_08`; 75% em `pred`/`error` no dev do `enc_17`).
+A significância individual em dev e teste é baixa (poucas decisões ativas): as features mais bem ranqueadas no CMH muitas vezes têm só 24–41 ativações, com razões de chances enormes (49–99) e 3–10 ativações em dev e teste; só as
+com suporte maior replicam de forma individual (por exemplo `enc_08` `corr`/`error` feature 10217: 1.970 ativas, z = 5,6 / 3,0 / 3,0 na descoberta / dev / teste).
+
+**O que as features parecem ser (só descrição dos exemplos; interpretação em branco nos cartões):** nos cartões das 4 melhores por visão no CMH, os tokens que mais ativam são em geral lexicais e de baixo nível
+(` river`, `_`, `country`, ` of`, ` over`, ` happened`, `sv`), com algumas ligadas ao nome de uma entidade; nenhuma é um "conceito" que os exemplos sustentem sozinhos. Há também duplicatas (as features 9977 e 11929 do `enc_08`
+têm ativações quase idênticas: 2.097 e 2.098 na descoberta, 344 no dev e 807 no teste nas duas). Os cartões estão em `feature_cards/` (um critério por índice).
+
+**Atribuição por gradiente** (decisões erradas: 3.888 no treino e 1.301 no teste; `Δ = logit[correta] − logit[prevista]`):
+
+| | fração de h·g explicada pelas features, treino / teste | argmax em fp32 ≠ oficial |
+|---|---|---|
+| `enc_08` | **0,87 / 0,85** | 1,0% / 1,3% |
+| `enc_17` | **0,31 / 0,26** | 1,0% / 1,3% |
+
+Em `enc_08` a atribuição é útil: concentrada (as 10 maiores features somam 79% de |atribuição média| no marcador previsto e 69% no correto), e as 50 mais negativas na descoberta são negativas também no teste (100%; Spearman 0,69–0,71).
+Em `enc_17` a maior parte do efeito linear fica no erro de reconstrução e no viés, então **a atribuição lá deve ser lida com cautela**. A atribuição é de primeira ordem e ignora o termo de erro do SAE.
+
+**"Probe acerta, Laya erra":** 2.113 de 6.000 decisões de treino (predições fora da dobra) e 702 de 2.000 no teste. Os rankings nesse subconjunto (`feature_stats_*_probe_right_laya_wrong.parquet`) mostram o mesmo padrão:
+muito do sinal ingênuo é identidade de opção; com CMH sobram 43 features (`pred`) e 979 (`state`) com mais erro no `enc_08`. Várias das features de `state` mais fortes têm lift ingênuo ≈ 1,0 mas OR do CMH 2–3 (a associação só aparece dentro de cada pergunta).
+
+## 6. Parte C: base × fine-tuned (par em inglês, `enc_17`)
+
+`convaiinnovations/laya` (base) × subfolder `typed-decisions` (fine-tuned), mesma revisão `e333cb7c…`; os pesos do fine-tuned avulso são idênticos (mesmo OID). Configuração comum 1024/256 em tudo.
+
+- **Entradas idênticas:** os `token_id` e os papéis dos tokens são iguais nos dois modelos, nos dois splits (1.748.500 e 582.370 tokens).
+- **A configuração comum não distorce o base:** acurácia no teste 0,3625 (512/192) contra 0,3630 (1024/256). Fine-tuned: **0,7685 no teste** (o README diz 0,766); no treino 0,854 e no dev 0,857,
+  que são **contaminados** (ele foi treinado nos workflows do benchmark; NÃO VERIFICADO em qual split, mas os números mostram que viu o treino). Toda acurácia e associação com acerto do fine-tuned vem do teste.
+- **Probe no base, dev:** melhor camada do backbone `enc_17` (0,647); no teste 0,621, contra prior 0,483, controle 0,463 e o próprio base 0,363.
+- **SAE do base no fine-tuned:** FVE 0,774 (0,652 nos marcadores) contra 0,912 no base: queda de 0,138 (limite 0,05). Pela emenda 2 treinei uma **cópia** do SAE nas ativações do fine-tuned (partida a quente, 10M tokens): FVE no fine-tuned **0,915**.
+- **Marcadores massivos (fora do SAE) e a resposta do modelo** (`massive_markers_*.json`). Em `enc_17` os marcadores massivos ocorrem **só na segunda opção (`true`) das perguntas `noul`**
+  (P(massivo) = 0 em `choice` e `score`, e em todas as posições exceto a 1). Uma primeira versão desta análise comparava com todas as opções e inflava o efeito; o cálculo correto condiciona a `noul` e à posição:
+
+| `noul`, treino / teste | P(marcador `true` massivo) | P(responde `true`) (gabarito) | P(responde `true` \| `true` massivo) | P(responde `true` \| `true` não massivo) |
+|---|---|---|---|---|
+| base | 33% / 33% | 0,659 / 0,673 (0,498 / 0,508) | **0,903 / 0,915** | 0,537 / 0,552 |
+| fine-tuned | 50% / 50% | 0,518 / 0,515 (0,498 / 0,508) | 0,469 / 0,467 | 0,567 / 0,563 |
+
+  No base, quando o marcador `true` é massivo, o modelo responde `true` 36 pontos mais vezes do que quando não é (e o base já tem viés para `true`, seção 4). No fine-tuned a relação desaparece (até inverte um pouco).
+  É uma associação dentro de um único tipo de pergunta, não causalidade, e é invisível às features (esses marcadores ficam fora do SAE). No multilíngue não há marcador massivo.
+- **Diferenças por feature, 1ª passada** (SAE do base nos dois lados; contraste = ativação no marcador da opção correta − média nas erradas; bootstrap pareado por caso, 1.000 reamostras):
+  876 features têm IC95% fora de zero na descoberta (469 no dev, 649 no teste); as 50 maiores |Δ| têm o mesmo sinal no teste (100%) e o Spearman de Δ entre descoberta e teste é 0,55. As maiores mudanças: feature 2786 (contraste 0,30 → 3,14; Δ = 2,83, IC 2,71–2,96; teste 2,56), 11776 (Δ = −1,31), 7558 (Δ = +1,27). **Ressalva:** com FVE de só 0,774 no fine-tuned, parte dessas mudanças pode ser leitura imperfeita do SAE; a 2ª passada (cópia do SAE e pareamento) separa isso.
+- **Atribuição por gradiente no fine-tuned:** fração de h·g explicada 0,12 / 0,08 (SAE do base) e 0,15 / −0,004 (cópia), treino / teste; no base em inglês é negativa (−0,25 / −0,41). Trato como **diagnóstico não confiável**, não como resultado (a razão é de somas com sinal, então pode ficar negativa quando o efeito das features se opõe ao total h·g; não indica erro de cálculo, e sim que o SAE não captura a direção relevante do gradiente).
+- **2ª passada (cópia do SAE no fine-tuned, pareamento por vizinho mútuo):** job 3647, ainda na fila no momento desta versão do relatório; resultados em `part_c_sae_ft/` quando terminar. **PENDENTE.**
+
+## 7. Limitações
+
+- **Correlacional.** O CMH controla pergunta e identidade da opção, não o resto do conteúdo do caso; features significativas são candidatas. A ablação causal não foi feita.
+- **Tokens massivos fora do SAE.** Se carregarem informação usada pelo scorer, as features não a mostram; no base em inglês eles estão associados à resposta `true` em `noul` (seção 6).
+- **A atribuição é de primeira ordem e incompleta:** explica 85–87% de h·g em `enc_08`, 26–31% em `enc_17`, e ~0–15% (ou negativa) em inglês e no fine-tuned.
+- **Escolhas de limiares e de estrato sem base empírica prévia** (FVE 0,80 e 0,10; fidelidade 3 p.p. e 0,10 nat; CMH por visão, emenda 3 declarada depois de ver contagens agregadas).
+- **O probe é treinado no benchmark** (as predições do subconjunto "probe acerta" vêm de um leitor supervisionado), enquanto o Laya é zero-shot.
+- **Fine-tuned:** contaminado em treino e dev; temperaturas fora de [0,5; 5] para perguntas com ≥ 11 opções são ajustadas pelo pacote (o typed-decisions tem ≤ 5, sem efeito aqui). O bloco `training` do config do base é idêntico ao do fine-tuned (possivelmente copiado); não usei.
+- **Duplicatas e features raras:** há features com ativações idênticas; as de maior razão de chances têm pouquíssimas ativações em dev e teste.
+- Apenas uma semente (0) e uma largura (16×) por SAE; não variei k (a variante k = 64, "se houver tempo", não foi feita).
+
+## 8. Reprodutibilidade
+
+- **Código:** branch `experiment/sae-features` (a partir de `experiment/linear-probe`). Ambiente: `uv.lock` (sha256 `68a486f3…`), Python 3.14.10, torch 2.15.0+cu132 (CUDA 13.2), laya 0.4.30, transformers 5.22.2; GPU: NVIDIA B200 MIG 3g.90gb; `pip_freeze.txt` ao lado.
+- **Sementes:** 0 (inicialização do SAE, ordem dos dados, bootstrap, probes fora da dobra). Revisões: `convaiinnovations/laya` `7b928d82…` (multilíngue) e `e333cb7c…` (par em inglês); dataset `c76749ec…`.
+- **Jobs (Sauron, B200 MIG, 89 GB):** extração de todos os tokens 3603 (curto) / 3605; corpus 3604 / 3606; treino do SAE 3609 (curto), 3613 (`enc_17`), 3614 (`enc_08`), 3615 (literal), 3628 (dom20); probes fora da dobra 3610;
+  qualidade 3619 (`enc_08`), 3621 (`enc_17`), 3623 (literal), 3629 (dom20), 3635 (base), 3643 (cópia); features 3618/3626/3631 (`enc_08`, 3631 = estrato por visão), 3620/3627/3632 (`enc_17`, 3632 = estrato por visão);
+  Parte C: extração 3617 (curto) / 3625, tokens 3624 / 3633, SAE do base 3634, features base 3636, features fine-tuned 3637, comparação 3638, marcadores massivos 3640, cópia do SAE 3641, features da cópia 3644, comparação com cópia 3647 (pendente).
+- **RAM medida (pico, pedido):** corpus 1,8 GiB (3g); extração de tokens 8,0 GiB (8g, page cache do memmap); treino 6,0 GiB (8g); qualidade 2,8–4,0 GiB; features 2,7–4,4 GiB; Parte C: extração 9,1 GiB (10g), tokens 10,0 GiB (10g), SAE do base 7,8 GiB (10g).
+- **Artefatos** (relativos à raiz; os parquets de estatísticas e `attribution/` não vão para o git: ficam no cluster em `~/workspace/sae-decision-models/results/sae_features/` e no Mac):
+  `sae_quality.csv` e `sae_quality_flags_*.json`; `<SAE>/feature_stats_<visão>_<critério>.parquet` (colunas `cmh_*` e `cmh_qp_*`), `feature_stats_prior_bias.parquet`, `feature_stats_attribution.parquet`, `prior_bias_summary.json`, `decision_views.parquet`;
+  `feature_cards/<SAE>/` (cartões com campo "Interpretação" em branco); `part_c/` (comparação, acurácias, marcadores massivos); pesos e configs em `checkpoints/sae/<SAE>/{sae.pt,train_meta.json,train_log.csv}` (6 SAEs, ignorados pelo git);
+  módulo reutilizável `src/sae.py` + `src/sae_intervention.py` (zera ou fixa features preservando o erro de reconstrução; o limiar de massivos vem no checkpoint).

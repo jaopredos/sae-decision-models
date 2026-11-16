@@ -1,0 +1,25 @@
+{
+  "sae": "checkpoints/sae/ml_enc08_k32/sae.pt",
+  "layer": "enc_08",
+  "min_support": 20,
+  "decisions": {
+    "discovery": 5100,
+    "dev": 900,
+    "test": 2000
+  },
+  "marker_massive": {
+    "train": {
+      "markers_massive": 0,
+      "markers_total": 21300
+    },
+    "test": {
+      "markers_massive": 0,
+      "markers_total": 7100
+    }
+  },
+  "errors": {
+    "discovery": 3283,
+    "dev": 605,
+    "test": 1301
+  }
+}

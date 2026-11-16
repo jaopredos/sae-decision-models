@@ -1,0 +1,1 @@
+Nota: o script de probes da etapa 3 tinha o rótulo da linha de base fixo em 'Laya multilingual'. Neste diretório a linha é o **base em inglês** (convaiinnovations/laya, ModernBERT-large); os rótulos de summary_table.csv, results.json e REPORT.md foram corrigidos depois do job 3625, e o PNG foi regenerado com o título certo.

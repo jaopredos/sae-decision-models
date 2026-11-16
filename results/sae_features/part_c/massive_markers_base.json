@@ -1,0 +1,73 @@
+{
+  "layer": "enc_17",
+  "threshold": 804.9561767578125,
+  "sae": "checkpoints/sae/en_base_enc17_k32/sae.pt",
+  "train": {
+    "n_markers": 21300,
+    "p_massive": 0.028169014084507043,
+    "p_massive_picked": 0.09033333333333333,
+    "p_massive_not_picked": 0.0037908496732026145,
+    "p_massive_correct_option": 0.03266666666666666,
+    "p_massive_not_correct_option": 0.026405228758169936,
+    "p_massive_picked_when_decision_right": 0.07532347504621072,
+    "p_massive_picked_when_decision_wrong": 0.09880083420229406,
+    "p_massive_correct_option_when_decision_wrong": 0.008602711157455683,
+    "p_massive_wrong_option_not_picked": 0.0021807397069085834,
+    "mean_prob_massive": 0.7368783333333333,
+    "mean_prob_non_massive": 0.26849637198067633,
+    "p_picked_given_massive": 0.9033333333333333,
+    "p_picked_given_non_massive": 0.26367149758454106,
+    "p_decision_right_given_picked_massive": 0.3007380073800738,
+    "p_decision_right_given_picked_non_massive": 0.3666178087211433,
+    "by_option_position": {
+      "0": 0.0,
+      "1": 0.1,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0
+    },
+    "by_qtype": {
+      "choice": 0.0,
+      "noul": 0.1667,
+      "score": 0.0
+    },
+    "decisions": 6000,
+    "p_decision_has_massive_marker": 0.1,
+    "acc_when_decision_has_massive_marker": 0.31333333333333335,
+    "acc_when_no_massive_marker": 0.36592592592592593
+  },
+  "test": {
+    "n_markers": 7100,
+    "p_massive": 0.028169014084507043,
+    "p_massive_picked": 0.0915,
+    "p_massive_not_picked": 0.0033333333333333335,
+    "p_massive_correct_option": 0.033,
+    "p_massive_not_correct_option": 0.02627450980392157,
+    "p_massive_picked_when_decision_right": 0.07988980716253444,
+    "p_massive_picked_when_decision_wrong": 0.09811616954474098,
+    "p_massive_correct_option_when_decision_wrong": 0.006279434850863423,
+    "p_massive_wrong_option_not_picked": 0.0023523261892315736,
+    "mean_prob_massive": 0.7562445,
+    "mean_prob_non_massive": 0.26793478260869563,
+    "p_picked_given_massive": 0.915,
+    "p_picked_given_non_massive": 0.2633333333333333,
+    "p_decision_right_given_picked_massive": 0.31693989071038253,
+    "p_decision_right_given_picked_non_massive": 0.3676389653274629,
+    "by_option_position": {
+      "0": 0.0,
+      "1": 0.1,
+      "2": 0.0,
+      "3": 0.0,
+      "4": 0.0
+    },
+    "by_qtype": {
+      "choice": 0.0,
+      "noul": 0.1667,
+      "score": 0.0
+    },
+    "decisions": 2000,
+    "p_decision_has_massive_marker": 0.1,
+    "acc_when_decision_has_massive_marker": 0.335,
+    "acc_when_no_massive_marker": 0.3661111111111111
+  }
+}

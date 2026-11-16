@@ -1,0 +1,25 @@
+{
+  "sae": "checkpoints/sae/en_base_enc17_k32/sae.pt",
+  "layer": "enc_17",
+  "min_support": 20,
+  "decisions": {
+    "discovery": 5100,
+    "dev": 900,
+    "test": 2000
+  },
+  "marker_massive": {
+    "train": {
+      "markers_massive": 600,
+      "markers_total": 21300
+    },
+    "test": {
+      "markers_massive": 200,
+      "markers_total": 7100
+    }
+  },
+  "errors": {
+    "discovery": 3245,
+    "dev": 591,
+    "test": 1274
+  }
+}
