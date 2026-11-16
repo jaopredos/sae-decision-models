@@ -1,0 +1,25 @@
+# Etapa 4, passo 2: treino de um SAE TopK numa camada do Laya.
+#
+#   sauron submit -c scripts/sauron/jobs/sae-train-smoke.yaml scripts/sauron/sae_train.sauron
+#   sauron submit -c scripts/sauron/jobs/sae-train-enc17.yaml scripts/sauron/sae_train.sauron
+#
+# Variáveis (env do yaml): LAYER, NAME (obrigatórias); TOTAL_TOKENS, K, MASSIVE_MULT ("inf" = rodada literal),
+# CORPUS, DOMAIN_DIR, EXTRA_ARGS. O treino grava checkpoint.pt a cada 2.000 passos; um job refeito do zero
+# (retry) pode continuar com EXTRA_ARGS="--resume".
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+: "${LAYER:?defina LAYER (ex.: enc_17)}"
+: "${NAME:?defina NAME (ex.: ml_enc17_k32)}"
+log "SAE: layer=${LAYER} name=${NAME} tokens=${TOTAL_TOKENS:-50000000} k=${K:-32} massive=${MASSIVE_MULT:-5}"
+
+uv run --frozen python run_sae_train.py --layer "${LAYER}" --name "${NAME}" \
+    --total-tokens "${TOTAL_TOKENS:-50000000}" --k "${K:-32}" --massive-mult "${MASSIVE_MULT:-5}" \
+    --corpus "${CORPUS:-data/corpus/text.parquet}" \
+    --domain-dir "${DOMAIN_DIR:-data/activations/tokens/multilingual}" \
+    --out checkpoints/sae --device cuda ${EXTRA_ARGS:-}
+[[ -f "checkpoints/sae/${NAME}/sae.pt" ]] || die "o treino não gravou checkpoints/sae/${NAME}/sae.pt"
+du -sh "checkpoints/sae/${NAME}"

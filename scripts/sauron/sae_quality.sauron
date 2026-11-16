@@ -1,0 +1,17 @@
+# Etapa 4, passo 3: qualidade do SAE (FVE, L0, latentes mortas, fidelidade a jusante) no dev.
+#
+#   sauron submit -c scripts/sauron/jobs/sae-quality.yaml scripts/sauron/sae_quality.sauron
+#
+# Variáveis: LAYER, NAME (obrigatórias); CORPUS, DOMAIN_DIR, EXTRA_ARGS.
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+: "${LAYER:?defina LAYER}"
+: "${NAME:?defina NAME}"
+uv run --frozen python run_sae_quality.py --sae "checkpoints/sae/${NAME}/sae.pt" --layer "${LAYER}" --name "${NAME}" \
+    --corpus "${CORPUS:-data/corpus/text.parquet}" \
+    --domain-dir "${DOMAIN_DIR:-data/activations/tokens/multilingual}" \
+    --out results/sae_features --device cuda ${EXTRA_ARGS:-}

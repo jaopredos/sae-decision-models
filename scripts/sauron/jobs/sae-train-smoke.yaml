@@ -1,0 +1,24 @@
+# Job CURTO do treino do SAE: enc_17, largura cheia (12.288), 2M tokens, com o corpus e o domínio dos jobs curtos
+# (data/corpus_smoke e data/activations/tokens_smoke). Mede RAM, throughput e confirma o treino fim a fim na B200.
+#
+#   sauron submit -c scripts/sauron/jobs/sae-train-smoke.yaml scripts/sauron/sae_train.sauron
+
+name: sae-train-smoke
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# 1ª ESTIMATIVA: domínio e buffer vão para a GPU; no host ficam o texto, os ids e o memmap. Reajustar pelo pico.
+memory: 8g
+cpus: 4
+max_time: 30m
+
+workspace: sae-decision-models
+
+env:
+  LAYER: "enc_17"
+  NAME: "smoke_enc17"
+  TOTAL_TOKENS: "2000000"
+  CORPUS: "data/corpus_smoke/text.parquet"
+  DOMAIN_DIR: "data/activations/tokens_smoke/multilingual"
+  EXTRA_ARGS: "--smoke --buffer 500000 --val-tokens 100000 --eval-every 100 --ckpt-every 200 --dead-window 1000000"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

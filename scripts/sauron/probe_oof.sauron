@@ -1,0 +1,15 @@
+# Etapa 5, J3: predições do probe da etapa 3 fora da dobra (enc_17 e enc_08), sem tocar no teste.
+#
+#   sauron submit -c scripts/sauron/jobs/probe-oof.yaml scripts/sauron/probe_oof.sauron
+#
+# Usa os .npy dos marcadores da etapa 3 (data/activations/typed_decisions, job 3027).
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+for SPLIT in train test; do
+    [[ -f "data/activations/typed_decisions/${SPLIT}/parity.json" ]] || die "falta data/activations/typed_decisions/${SPLIT}"
+done
+uv run --frozen python run_probe_oof.py --layers "${PROBE_LAYERS:-enc_17:1e-5,enc_08:1e-3}" --device cuda

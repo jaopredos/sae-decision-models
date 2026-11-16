@@ -1,0 +1,17 @@
+# Probes da etapa 3 fora da dobra (enc_17 e enc_08), usando os marcadores já extraídos (job 3027).
+#
+#   sauron submit -c scripts/sauron/jobs/probe-oof.yaml scripts/sauron/probe_oof.sauron
+
+name: sae-probe-oof
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# 1ª ESTIMATIVA: o probes.yaml da etapa 3 (26 camadas) teve pico de 1,7 GiB; aqui são 2 camadas.
+memory: 3g
+cpus: 4
+max_time: 30m
+
+workspace: sae-decision-models
+
+env:
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"
