@@ -1,0 +1,18 @@
+# Parte C: os marcadores massivos (fora do SAE) têm relação com a opção que o modelo escolhe?
+#
+#   sauron submit -c scripts/sauron/jobs/massive-markers.yaml scripts/sauron/massive.sauron
+#
+# Lê o base e o fine-tuned com o MESMO limiar do SAE do base (en_base_enc17_k32).
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+SAE=checkpoints/sae/en_base_enc17_k32/sae.pt
+OUT=results/sae_features/part_c
+for item in "base partc_tokens/base partc/base_common" "ft partc_tokens/ft partc/ft"; do
+    set -- ${item}
+    uv run --frozen python run_massive_markers.py --sae "${SAE}" --layer enc_17 \
+        --tokens-dir "data/activations/$2" --stage3-dir "data/activations/$3" --out "${OUT}/massive_markers_$1.json"
+done
