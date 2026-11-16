@@ -1,0 +1,28 @@
+# Etapa 4, passo 1: ativações de TODOS os tokens do domínio (typed-decisions) em enc_17 e enc_08.
+#
+#   sauron submit -c scripts/sauron/jobs/extract-tokens-smoke.yaml scripts/sauron/extract_tokens.sauron
+#   sauron submit -c scripts/sauron/jobs/extract-tokens.yaml       scripts/sauron/extract_tokens.sauron
+#
+# LIMIT > 0 (curto): só os primeiros N casos de cada split, saída em data/activations/tokens_smoke e
+# gate contra o smoke da etapa 3 (data/activations/smoke). Completo: saída em data/activations/tokens e
+# gate contra data/activations/typed_decisions. O run_extract_tokens.py sai com erro se o gate (erro
+# relativo L2 dos marcadores <= 1e-3) ou a paridade de probabilidades (<= 1e-4) falhar.
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+LIMIT="${LIMIT:-0}"
+if (( LIMIT > 0 )); then
+    OUT=data/activations/tokens_smoke; GATE=data/activations/smoke
+else
+    OUT=data/activations/tokens; GATE=data/activations/typed_decisions
+fi
+log "extração de todos os tokens: LIMIT=${LIMIT} camadas=${LAYERS:-enc_17,enc_08} -> ${OUT} (gate: ${GATE})"
+
+for SPLIT in train test; do
+    uv run --frozen python run_extract_tokens.py --split "${SPLIT}" --layers "${LAYERS:-enc_17,enc_08}" \
+        --limit "${LIMIT}" --device cuda --out "${OUT}" --gate-dir "${GATE}"
+done
+du -sh "${OUT}"

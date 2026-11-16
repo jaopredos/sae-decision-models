@@ -1,0 +1,21 @@
+# Job CURTO da extração de todos os tokens (etapa 4, passo 1): 20 casos por split, enc_17 e enc_08, com o
+# gate contra os marcadores do smoke da etapa 3 (data/activations/smoke, job 3026).
+#
+#   sauron submit -c scripts/sauron/jobs/extract-tokens-smoke.yaml scripts/sauron/extract_tokens.sauron
+
+name: sae-extract-tokens-smoke
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# 1ª ESTIMATIVA. As extrações da etapa 3 deram pico de 4,7 GiB (completa) e 8,0 GiB (curta, mas com a
+# instalação do ambiente junto). Reajustar pelo pico medido (pico / 0,7).
+memory: 6g
+cpus: 4
+max_time: 30m
+
+workspace: sae-decision-models
+
+env:
+  LIMIT: "20"
+  LAYERS: "enc_17,enc_08"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

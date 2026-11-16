@@ -1,0 +1,22 @@
+# Job CURTO do corpus (etapa 4, passo 0): cotas minúsculas e 3 idiomas, para medir RAM, tempo e confirmar que
+# as leituras por faixas de linhas do Hugging Face funcionam de dentro do container (NÃO VERIFICADO até rodar).
+#
+#   sauron submit -c scripts/sauron/jobs/corpus-smoke.yaml scripts/sauron/corpus.sauron
+
+name: sae-corpus-smoke
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# 1ª ESTIMATIVA: no Mac o pico foi ~1,1 GB com estas cotas. Reajustar pelo pico medido (pico / 0,7).
+memory: 3g
+cpus: 4
+max_time: 20m
+
+workspace: sae-decision-models
+
+env:
+  CORPUS_OUT: "data/corpus_smoke"
+  CORPUS_EN_TOKENS: "2000000"
+  CORPUS_LANG_TOKENS: "100000"
+  CORPUS_LIMIT_LANGS: "3"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

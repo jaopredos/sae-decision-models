@@ -1,0 +1,23 @@
+# Etapa 4, passo 0: texto genérico do corpus do SAE (FineWeb + FineWeb-2), sem modelo.
+#
+#   sauron submit -c scripts/sauron/jobs/corpus-smoke.yaml scripts/sauron/corpus.sauron
+#   sauron submit -c scripts/sauron/jobs/corpus.yaml       scripts/sauron/corpus.sauron
+#
+# CORPUS_EN_TOKENS / CORPUS_LANG_TOKENS / CORPUS_LIMIT_LANGS (no env do yaml) controlam as cotas;
+# CORPUS_OUT é a pasta de saída (dentro do projeto, que é o ~/workspace persistente).
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+OUT="${CORPUS_OUT:-data/corpus}"
+log "corpus: en=${CORPUS_EN_TOKENS:-52000000} por-idioma=${CORPUS_LANG_TOKENS:-2000000} idiomas=${CORPUS_LIMIT_LANGS:-todos} -> ${OUT}"
+df -h "$(pwd)" | tail -1 | awk '{print "[probe] disco do workspace: " $4 " livres de " $2 " (" $5 " usado)"}'
+
+uv run --frozen python run_corpus.py --out "${OUT}" \
+    --en-tokens "${CORPUS_EN_TOKENS:-52000000}" \
+    --lang-tokens "${CORPUS_LANG_TOKENS:-2000000}" \
+    --limit-langs "${CORPUS_LIMIT_LANGS:-0}"
+[[ -f "${OUT}/text.parquet" ]] || die "run_corpus não gravou ${OUT}/text.parquet"
+du -sh "${OUT}"

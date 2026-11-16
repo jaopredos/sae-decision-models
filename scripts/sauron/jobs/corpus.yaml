@@ -1,0 +1,19 @@
+# Corpus completo (etapa 4, passo 0): ~52M tokens de inglês (FineWeb sample-10BT) e ~2M por idioma em 12 idiomas
+# (FineWeb-2), contados com o tokenizer do Laya multilingual. Só depois de o corpus-smoke passar.
+#
+#   sauron submit -c scripts/sauron/jobs/corpus.yaml scripts/sauron/corpus.sauron
+
+name: sae-corpus
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# 1ª ESTIMATIVA: o texto fica em memória (~250 MB) mais o tokenizer e os lotes. Reajustar pelo pico medido.
+memory: 4g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  CORPUS_OUT: "data/corpus"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

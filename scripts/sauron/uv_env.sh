@@ -79,8 +79,10 @@ if not ok:
     sys.exit(1)
 PYEOF
 
-mkdir -p results/probe_typed
-uv pip freeze --python "${UV_PROJECT_ENVIRONMENT}/bin/python" > results/probe_typed/pip_freeze.txt
+# o yaml pode apontar o freeze para fora de results/probe_typed (que está versionado)
+PIP_FREEZE_OUT="${PIP_FREEZE_OUT:-results/probe_typed/pip_freeze.txt}"
+mkdir -p "$(dirname "${PIP_FREEZE_OUT}")"
+uv pip freeze --python "${UV_PROJECT_ENVIRONMENT}/bin/python" > "${PIP_FREEZE_OUT}"
 
 # pico de RAM do cgroup ao sair (inclusive em falha), para calibrar `memory:` no yaml
 relatorio_memoria() {

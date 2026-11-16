@@ -1,0 +1,21 @@
+# Extração completa de todos os tokens (etapa 4, passo 1): 1.200 casos de treino + 400 de teste, enc_17 e
+# enc_08, ~2,6M tokens por camada nos dois splits (~5 GB em fp16 nas duas camadas). Gate contra os marcadores da
+# etapa 3 (data/activations/typed_decisions, job 3027). Só depois de o curto passar.
+#
+#   sauron submit -c scripts/sauron/jobs/extract-tokens.yaml scripts/sauron/extract_tokens.sauron
+
+name: sae-extract-tokens
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# 1ª ESTIMATIVA (gravação por memmap; o page cache conta no cgroup). Reajustar pelo pico medido.
+memory: 8g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  LIMIT: "0"
+  LAYERS: "enc_17,enc_08"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"
