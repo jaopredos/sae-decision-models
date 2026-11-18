@@ -1,0 +1,18 @@
+# Etapa 6: ablação causal de features (PROTOCOLO.md, emenda 4). Roda dev e depois teste com a MESMA seleção,
+# gravada na primeira execução a partir só da descoberta (selected_features.json).
+#
+#   sauron submit -c scripts/sauron/jobs/ablation-enc08.yaml scripts/sauron/ablation.sauron
+#
+# Variáveis: LAYER, NAME (obrigatórias); EXTRA_ARGS (ex.: --n-null 100).
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+: "${LAYER:?defina LAYER}"
+: "${NAME:?defina NAME}"
+for SUBSET in dev test; do
+    uv run --frozen python run_ablation.py --sae "checkpoints/sae/${NAME}/sae.pt" --layer "${LAYER}" --name "${NAME}" \
+        --subset "${SUBSET}" --device cuda ${EXTRA_ARGS:-}
+done
