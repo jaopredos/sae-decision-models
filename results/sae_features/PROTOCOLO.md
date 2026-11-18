@@ -159,3 +159,43 @@ de descoberta/dev/teste agregado, sem selecionar nenhuma feature), então vale c
 
 **Limites que seguem valendo:** o CMH controla pergunta e identidade de opção, não o resto do conteúdo do caso. Features
 significativas aqui são candidatas, correlacionais.
+
+## Emenda 4: ablação causal de features (etapa 6; liberada pelo usuário em 18/11/2026, depois de fechados o relatório e o k=64)
+
+A ablação ficou fora das etapas 4 e 5. Este texto é escrito **antes** de qualquer execução; a única coisa vista antes foi o smoke de encanamento
+em poucos casos do conjunto de **descoberta** (nenhum dev, nenhum teste), só para conferir que o código roda.
+
+**Pergunta.** Zerar, nas ativações da camada, features cujo efeito linear de primeira ordem empurra para a resposta errada (atribuição por gradiente, seção 5 do relatório)
+muda de fato a saída do Laya na direção da resposta correta, mais do que zerar features sem relação com o erro?
+
+**Expectativa (antes de ver o dado).** Efeito pequeno e disperso. A atribuição de primeira ordem explica 85–87% de h·g em `enc_08` mas só 26–31% em `enc_17`, e as features individuais têm
+atribuição média de ~0,001 a 0,013 logit; o bias de prior parece distribuído por muitas features. Espero que o conjunto de K = 20 features desloque a margem na direção prevista, mas pouco, e
+que a previsão de primeira ordem acerte o sinal e subestime a magnitude, principalmente em `enc_17`. Não espero corrigir uma fração grande dos erros.
+
+**Camadas e SAEs.** Primária: `enc_08` com `ml_enc08_k32` (onde a atribuição é mais completa). Secundária, mesma receita: `enc_17` com `ml_enc17_k32`. Resultados sempre rotulados por camada; sem escolher a melhor depois.
+
+**Seleção das features (só na descoberta = treino-menos-dev).** Atribuição média no marcador da opção prevista (`a_pred`) sobre as decisões erradas da descoberta, entre as features com suporte
+(≥ 20 decisões com a feature ativa no marcador previsto, como no resto do protocolo).
+- Lista **neg** (candidatas a empurrar para a resposta errada): as 50 de `a_pred` média mais negativa. Lista **pos** (controle positivo): as 50 mais positivas.
+- A seleção é gravada em `selected_features.json` **antes** de rodar dev e teste e é reutilizada tal como está.
+
+**Intervenção.** `src/sae_intervention.py`, modo `edit` (preserva o erro de reconstrução), zerando as features do conjunto. Duas variantes, declaradas antes:
+(i) **marcadores**: só nos tokens `[MASK]` das opções (primária); (ii) **todos os tokens** não massivos (secundária; é a que a atribuição de primeira ordem prevê exatamente).
+Conjuntos: as K primeiras de cada lista, K ∈ {1, 5, 20}; **K = 20 é o desfecho principal**.
+
+**Dados.** Dev (180 casos, 900 decisões) para a análise; teste (400 casos, 2.000 decisões) só como replicação das mesmas listas, sem reescolher nada. Os números do dev e do teste são sempre mostrados lado a lado.
+
+**Medidas.** Por decisão, com `pred0` = argmax dos logits brutos sem intervenção (bf16, como no `predict`, em lotes por workflow) e `gold` = rótulo: margem m = logit[gold] − logit[pred0].
+- **Desfecho principal:** Δm médio sobre as decisões em que o Laya (sem intervenção) erra. Positivo = a intervenção aproxima da resposta correta. IC95% por bootstrap pareado sobre casos (1.000 reamostras).
+- Secundários: fração dos erros corrigidos (argmax passa a `gold`); fração dos acertos quebrados; variação de acurácia em todas as decisões.
+- **Nulo:** 100 conjuntos aleatórios por K e por variante, sorteados entre as features com suporte, **pareados com a lista neg por quintil de frequência de ativação no marcador previsto** (n_active na descoberta).
+  O mesmo nulo serve de referência para a lista pos (que pode ter outra distribuição de frequências; declarado como limitação).
+- **Calibração da previsão de primeira ordem:** 25 features individuais de cada lista, variante "todos os tokens": correlação de Spearman entre o Δm medido e −(atribuição total média da feature, soma dos quatro grupos) nas mesmas decisões erradas.
+- **Encanamento:** concordância entre o argmax em lote sem intervenção e o `model_pred` oficial (esperada ≥ 98%; abaixo disso, parar e olhar).
+
+**Critério de decisão (fixado agora).** Há **efeito causal distinguível** do conjunto neg de K = 20 na camada/variante se, no **dev**, (a) o IC95% do Δm exclui zero e (b) o Δm fica acima do percentil 95 do nulo
+(p empírico unilateral ≤ 0,05); e há **replicação** se, no **teste**, o Δm tem o mesmo sinal e também passa de (b). O controle positivo (lista pos) deve dar Δm negativo e abaixo do percentil 5 do nulo.
+Sem replicação, ou com controle positivo falhando, o texto diz que o efeito não foi demonstrado. Nada é reajustado depois de ver o dado; se a leitura ficar ambígua, mostro as duas.
+
+**Limites já conhecidos.** O SAE é ajustado a ativações, não a efeitos; zerar uma feature move a saída também por vias de segunda ordem. Com nulo de 100 sorteios, p empírico não passa de 0,0099. A ablação mede o que *este SAE* isola, não "o conceito" da feature (sem rótulos).
+Features duplicadas (ativações quase idênticas) podem entrar juntas na lista e contar duas vezes; não foram removidas.
