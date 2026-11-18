@@ -199,3 +199,32 @@ Sem replicação, ou com controle positivo falhando, o texto diz que o efeito n�
 
 **Limites já conhecidos.** O SAE é ajustado a ativações, não a efeitos; zerar uma feature move a saída também por vias de segunda ordem. Com nulo de 100 sorteios, p empírico não passa de 0,0099. A ablação mede o que *este SAE* isola, não "o conceito" da feature (sem rótulos).
 Features duplicadas (ativações quase idênticas) podem entrar juntas na lista e contar duas vezes; não foram removidas.
+
+## Emenda 5: variantes da ablação alinhadas à atribuição (feita depois de um teste de encanamento em 80 casos de descoberta; antes de qualquer dev ou teste)
+
+**O que o teste de encanamento mostrou** (só descoberta, 80 casos, 400 decisões; nenhum dev, nenhum teste): (a) a previsão de primeira ordem acerta bem a maioria das features individuais
+(por exemplo feature 9247: medido −0,0096 contra previsto −0,0094), com exceções (feature 4689: −0,078 contra +0,019); (b) o controle positivo da emenda 4 saiu com sinal **oposto** ao previsto (lista pos, K = 20,
+variante "marcadores": Δm = +0,67 em vez de negativo). Causa: a lista é escolhida pela atribuição no marcador da opção **prevista** (`a_pred`), mas a variante "marcadores" zerava as features em **todos** os marcadores,
+inclusive o da opção correta, onde várias dessas features (10060, 5674, 2474) têm atribuição fortemente negativa. A intervenção não correspondia ao que a atribuição mede. Isso é falha do meu desenho, não resultado.
+O mesmo teste mostrou que o efeito de K = 20 features é pequeno (neg: Δm ≈ +0,02 logit, contra uma margem média das decisões erradas de ~2 logits).
+
+**Mudanças** (substituem as variantes e as listas da emenda 4; todo o resto da emenda 4 vale):
+1. **Duas variantes, cada uma com a sua lista de seleção (só descoberta):**
+   - `pred` (primária): zera as features **apenas no token `[MASK]` da opção prevista** (a opção que o Laya escolhe sem intervenção). Seleção: `a_pred` média nas decisões erradas da descoberta, suporte ≥ 20 decisões com a feature ativa no marcador previsto (visão `pred`).
+   - `all`: zera as features em **todos os tokens não massivos**. Seleção: atribuição total (soma dos quatro grupos `a_pred + a_corr + a_state + a_other`), suporte ≥ 20 decisões na visão `state`. É a variante que a primeira ordem prevê exatamente.
+   - A variante "todos os marcadores" foi retirada.
+2. **K ∈ {1, 5, 20, 100}** (listas neg e pos de 100); K = 20 segue como desfecho principal e K = 100 é reportado também.
+3. **Nulo: 50 conjuntos por K e por variante** (era 100; o custo do cluster dobrava), pareados pela lista neg da variante por quintil de n_active. O menor p empírico possível é 1/51 ≈ 0,02.
+4. **Relevância, além de distinguibilidade.** Um efeito pode passar no critério da emenda 4 e ser desprezível. Fixo agora: o efeito é **relevante** se Δm ≥ 10% da margem média |m| das decisões erradas (medida no dev) **ou** se corrige ≥ 1% das decisões erradas.
+   Este limiar é convencional; foi escrito **depois** de eu ter visto que o efeito de K = 20 na descoberta é de ~1% da margem, então não é um limiar neutro: ele tende a classificar efeitos desse tamanho como irrelevantes, e isso fica dito.
+5. **Calibração:** 25 features individuais de cada lista (neg e pos), nas duas variantes, medido contra a previsão de primeira ordem exata de cada variante (`−média de a_pred` na variante `pred`; `−média da atribuição total` na `all`), no dev.
+6. **Teste (replicação):** só as listas e os nulos de K = 20 e K = 100; sem condições individuais nem calibração (isso fica no dev). As listas são as do dev, sem reescolher nada.
+7. **Critério de decisão:** o da emenda 4 (IC95% do Δm exclui zero e fica acima do percentil 95 do nulo no dev; replicação no teste com mesmo sinal e acima do percentil 95; controle positivo negativo e abaixo do percentil 5), agora aplicado a cada variante, **mais** a relevância do item 4.
+   Distinguível mas irrelevante será escrito como tal.
+
+**Adendo à emenda 5 (escrito depois de um 2º teste de encanamento, em 40 casos de descoberta, ainda antes de qualquer dev ou teste).** Esse teste mostrou: variante `pred`, calibração da primeira ordem quase exata
+(Spearman 0,997, medido ≈ 0,83 do previsto), controle positivo com o sinal certo (Δm = −0,21 para K = 20) e efeito da lista neg pequeno (+0,027 logit, 1,2% da margem, 0 erros corrigidos); variante `all`, efeito grande
+(+0,90 logit, 10% dos erros corrigidos) **mas com 43% das decisões certas quebradas**, e calibração fraca (Spearman 0,58). Como "relevante" pelo item 4 poderia premiar uma intervenção que só desorganiza o modelo, fixo agora:
+- Um efeito só conta como **relevante** se, além do item 4, a **acurácia total não cair** (variação de acurácia em todas as decisões ≥ 0). Caso contrário o texto diz "efeito grande, mas não específico: a intervenção quebra decisões certas".
+- A variante `pred` é a que responde à pergunta causal (efeito das features no marcador da opção escolhida); a `all` é reportada como controle de escala e de calibração, não como evidência de mecanismo.
+- Um recurso de implementação do nulo: quando a faixa de frequência de uma feature não tem candidatos livres (a faixa mais alta é pequena), o sorteio usa a faixa vizinha mais próxima; o número de sorteios nessa situação é gravado em `summary.json` (no smoke: 44 de 1.008).
