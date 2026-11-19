@@ -1,8 +1,7 @@
 # SAE e features que explicam o erro do Laya no typed-decisions (etapas 4 e 5)
 
-Tudo aqui é **correlacional**, exceto a fidelidade a jusante (que mede o SAE, não as features). A ablação causal **não** foi rodada; o
-módulo `src/sae_intervention.py` está pronto para ela. Critérios e limiares foram fixados antes dos jobs em `PROTOCOLO.md`; as três
-emendas (feitas por causa do que os dados mostraram) estão datadas lá e resumidas na seção 2. As tabelas completas, geradas dos artefatos
+Tudo aqui é **correlacional**, exceto a fidelidade a jusante (que mede o SAE, não as features). A **ablação causal** da seção 7 foi feita depois, com protocolo próprio. Critérios e limiares foram fixados antes dos jobs em `PROTOCOLO.md`; as cinco
+emendas (feitas por causa do que os dados mostraram; a 4 e a 5 são da ablação) estão datadas lá e resumidas na seção 2 e na seção 7. As tabelas completas, geradas dos artefatos
 sem interpretação, estão em `REPORT_tables.md`.
 
 ## Resumo
@@ -18,6 +17,9 @@ sem interpretação, estão em `REPORT_tables.md`.
   prevista, 364 features significativas viram 20 sob o teste estratificado (pergunta × opção). O que sobrevive replica em direção (top-20 por |z| com 75–100% de
   concordância de sinal em dev e teste), mas é fraco e, nos exemplos, **majoritariamente lexical** (tokens como ` river`, `_`, ` of`, ` over`). Não atribuí rótulos.
 - **A informação mal lida existe e é mensurável:** 2.113 das 6.000 decisões de treino (probe fora da dobra) e 702 das 2.000 de teste são "o probe acerta, o Laya erra".
+- **Ablação causal (seção 7):** zerar as 20 features de maior atribuição negativa no marcador da opção escolhida move a margem na direção da resposta correta e **replica no teste** nas duas camadas
+  (muito acima de conjuntos aleatórios pareados). Mas o efeito **não é relevante nem específico**: em `enc_08` é ~2% da margem (corrige 0,8% dos erros) e em `enc_17` é ~20% da margem, porém a acurácia
+  total **cai** (−0,7 p.p. no dev, −1,4 p.p. no teste), porque a intervenção quebra 17% das decisões certas. A previsão de primeira ordem acerta bem o efeito de features individuais (Spearman 0,90–0,93).
 - **Parte C (base × fine-tuned em inglês):** entradas idênticas confirmadas; a configuração comum não distorce o base (0,3625 contra 0,3630). No base, marcadores massivos
   (fora do SAE) ocorrem **só na opção `true` das perguntas `noul`** (em 1/3 delas); nessas, o base responde `true` em 90–92% dos casos quando esse marcador é massivo e em 54–55% quando não é
   (no fine-tuned a relação some: 47% contra 56–57%). Mas atenção: a atribuição por gradiente no fine-tuned explica quase nada de h·g (0–15%) e deve ser lida como diagnóstico.
@@ -166,26 +168,76 @@ muito do sinal ingênuo é identidade de opção; com CMH sobram 43 features (`p
   incluem 15421 e 12238 (também no marcador) e 11776, 6496 e 8737 (na pergunta, no estado e nas opções). Δ negativo quer dizer que a diferença (opção correta − erradas) fica menor, não que a feature "represente o erro".
   Em 12238 e 15436 o base errou em todos os 5 exemplos máximos mostrados, o que é só uma observação dos exemplos, não uma estatística.
 
-## 7. Limitações
+## 7. Ablação causal (emendas 4 e 5 do `PROTOCOLO.md`)
 
-- **Correlacional.** O CMH controla pergunta e identidade da opção, não o resto do conteúdo do caso; features significativas são candidatas. A ablação causal não foi feita.
+**O que foi feito.** Zerar um conjunto de features nas ativações da camada (`SAEIntervention`, modo `edit`: o erro de reconstrução do SAE fica no fluxo, só a contribuição das features some) e medir a mudança nos logits do Laya.
+Margem m = logit[correta] − logit[escolha sem intervenção]; **Δm > 0 aproxima da resposta correta**. Duas variantes, cada uma com a sua lista escolhida **só na descoberta**: `pred` (zera só no `[MASK]` da opção que o Laya escolhe;
+lista por `a_pred`; **primária**) e `all` (zera em todos os tokens não massivos; lista por atribuição total; controle de escala). Conjuntos das K primeiras de cada lista, K ∈ {1, 5, 20, 100}; **K = 20 é o desfecho principal**.
+Nulo: 50 conjuntos aleatórios por K e variante, pareados por frequência de ativação. Dev (900 decisões, 606 erros) para a análise e teste (2.000 decisões, 1.300 erros) só para replicar as mesmas listas.
+Jobs 3874 (`enc_08`) e 3875 (`enc_17`); artefatos em `ablation/<SAE>/` (`selected_features.json`, e `dev/` e `test/` com `conditions.csv`, `summary.json`, `calibration.csv`).
+
+**Dois desvios de rumo, declarados antes de qualquer dev ou teste** (PROTOCOLO, emenda 5 e adendo): um teste de encanamento em casos de **descoberta** mostrou que o desenho original (zerar em *todos* os marcadores, lista por `a_pred`) dava o controle positivo com sinal trocado,
+porque zerava também o marcador da opção correta; as variantes foram refeitas. Esse teste também mostrou o efeito pequeno e a quebra de decisões certas, e por isso o critério de "relevante" passou a exigir que a acurácia total não caia.
+O limiar de relevância (≥ 10% da margem média das decisões erradas, ~2,1 logits, ou ≥ 1% dos erros corrigidos) foi escrito **depois** de eu ver que o efeito de K = 20 na descoberta era de ~1% da margem; não é neutro.
+
+**Resultados, K = 20 e K = 100 (dev; teste entre parênteses).** Δacc é a variação de acurácia em todas as decisões (acurácia sem intervenção: 0,327 no dev, 0,350 no teste).
+
+| camada | variante | K | Δm (logit) | Δm / \|m\| | erros corrigidos | certas quebradas | Δacc (p.p.) | nulo p95 |
+|---|---|---|---|---|---|---|---|---|
+| `enc_08` | `pred` | 20 | +0,040 (+0,033) | 1,9% (1,6%) | 0,8% (0,9%) | 2,4% (1,3%) | −0,2 (+0,2) | +0,002 (+0,000) |
+| `enc_08` | `pred` | 100 | +0,051 (+0,045) | 2,5% (2,1%) | 1,5% (1,0%) | 3,4% (2,6%) | −0,1 (−0,3) | −0,000 (−0,000) |
+| `enc_08` | `all` | 20 | +0,563 (+0,536) | 27% (26%) | 11,7% (10,5%) | 19,0% (18,7%) | +1,7 (+0,3) | +0,014 (+0,013) |
+| `enc_08` | `all` | 100 | +1,340 (+1,335) | 64% (64%) | 27,4% (26,0%) | 38,4% (36,3%) | +5,9 (+4,2) | +0,038 (+0,051) |
+| `enc_17` | `pred` | 20 | +0,421 (+0,433) | 20% (21%) | 7,6% (6,9%) | 17,7% (16,7%) | −0,7 (−1,4) | +0,003 (+0,005) |
+| `enc_17` | `pred` | 100 | +0,564 (+0,577) | 27% (28%) | 10,4% (9,6%) | 25,2% (23,4%) | −1,2 (−2,0) | +0,010 (+0,010) |
+| `enc_17` | `all` | 20 | +0,874 (+0,958) | 42% (46%) | 15,4% (15,5%) | 29,6% (30,9%) | +0,7 (−0,8) | +0,007 (+0,007) |
+| `enc_17` | `all` | 100 | +1,330 (+1,377) | 64% (66%) | 21,0% (22,2%) | 38,1% (37,7%) | +1,7 (+1,3) | +0,017 (+0,017) |
+
+Todos os IC95% por bootstrap sobre casos excluem zero e todos os p empíricos são 0,0196 (o mínimo possível com 50 sorteios: nenhum conjunto aleatório chegou perto). O **controle positivo** (lista pos, K = 20, variante `pred`) dá Δm negativo e abaixo do percentil 5 do nulo:
+−0,55 (−0,53) em `enc_08` e −0,91 (−0,85) em `enc_17`.
+
+**Calibração da primeira ordem (dev, 25 features individuais por lista; só no dev, porque o teste não roda condições individuais).** Variante `pred`: Spearman 0,93 (`enc_08`) e 0,90 (`enc_17`), 98% e 96% de concordância de sinal, e |medido| / |previsto| = 1,16 nas duas.
+Variante `all`: Spearman 0,90 e 0,80, concordância de sinal 90% e 96%, razão 0,81 e 1,92 (em `enc_17` a ablação em todos os tokens amplifica o efeito previsto por quase 2×, uma não linearidade). A atribuição por gradiente prevê bem o efeito de **features individuais** no marcador, mesmo em `enc_17`, onde explicava só ~30% do total de h·g.
+
+**Leitura contra o critério fixado.**
+- **Distinguível e replicado: sim**, nas duas camadas e nas duas variantes (critério da emenda 4: IC95% fora de zero e acima do percentil 95 do nulo no dev, mesmo sinal e acima do percentil 95 no teste; controle positivo ok).
+- **Relevante (variante `pred`, a que responde à pergunta): não.** Em `enc_08` o efeito de K = 20 é ~2% da margem e corrige 0,8% dos erros: **distinguível mas desprezível**, como eu esperava. Em `enc_17` o efeito é grande (~20% da margem, 7,6% dos erros corrigidos), mas
+  a acurácia total **cai** nas duas divisões (−0,7 e −1,4 p.p.): a intervenção quebra 17% das decisões certas, aproximadamente tantas quanto conserta (cerca de 46 erros corrigidos e 52 acertos quebrados no dev). Pelo adendo da emenda 5: "efeito grande, mas não específico".
+- **Variante `all`** (controle de escala, não evidência de mecanismo, pelo protocolo): o efeito é grande e a acurácia total sobe em quase todos os casos (+1,7 e +5,9 p.p. em `enc_08` no dev; em `enc_17` K = 20 sobe no dev e cai no teste), mas à custa de quebrar 19–38% das decisões certas.
+  Pela letra do critério isto contaria como "relevante" em `enc_08` e em `enc_17` com K = 100; não leio como mecanismo isolado, e sim como uma perturbação ampla do modelo que, dado o viés de prior (seção 4), recupera parte dos erros.
+
+**O que isto sustenta e o que não sustenta.**
+- Sustenta: as features de maior atribuição negativa no marcador da opção escolhida têm efeito causal real e replicável, **na direção prevista pela atribuição**, sobre a margem entre a resposta correta e a escolhida. Zerar features sem relação (nulo pareado) não faz nada.
+- Não sustenta que existam "features do erro". Em `enc_08` o efeito de qualquer conjunto de até 100 features é pequeno, o que é coerente com um viés de prior **distribuído** por muitas features, cada uma com atribuição média de ordem 0,001–0,013 logit. Em `enc_17` o efeito é maior,
+  mas **não específico dos erros**: uma leitura consistente com os números (não verificada) é que essas features codificam "a opção que está sendo escolhida" em geral, e zerá-las reduz a confiança na escolhida tanto quando ela está errada quanto quando está certa.
+- Não sustenta um rótulo para nenhuma feature: nenhuma feature foi interpretada.
+
+**Limitações específicas.** (1) Só zeragem de features já ranqueadas pela atribuição de primeira ordem; não testei fixar valores, nem features escolhidas por outros critérios (por exemplo pelo CMH), nem o k = 64. (2) O nulo foi pareado por frequência de ativação e, em `enc_17`, 21% dos sorteios caíram em faixa vizinha
+(4% em `enc_08`), porque as features de maior atribuição são muito frequentes; os nulos ficam em ≤ 0,017 logit, bem abaixo dos efeitos, então a conclusão não depende disso. (3) Os p empíricos têm piso de 0,0196. (4) Features duplicadas (ativações quase idênticas) podem contar duas vezes numa lista.
+(5) A variante `pred` zera no marcador da opção escolhida *sem intervenção*; não há variante que zere o marcador da opção correta (a atribuição `a_corr` ficou sem teste causal). (6) Um só SAE por camada (seed 0, k = 32).
+
+## 8. Limitações
+
+- **Correlacional (seções 5 e 6).** O CMH controla pergunta e identidade da opção, não o resto do conteúdo do caso; features significativas são candidatas. A ablação da seção 7 testa só um recorte (as features de maior atribuição, em duas camadas, por zeragem).
 - **Tokens massivos fora do SAE.** Se carregarem informação usada pelo scorer, as features não a mostram; no base em inglês eles estão associados à resposta `true` em `noul` (seção 6).
 - **A atribuição é de primeira ordem e incompleta:** explica 85–87% de h·g em `enc_08`, 26–31% em `enc_17`, e ~0–15% (ou negativa) em inglês e no fine-tuned.
 - **Escolhas de limiares e de estrato sem base empírica prévia** (FVE 0,80 e 0,10; fidelidade 3 p.p. e 0,10 nat; CMH por visão, emenda 3 declarada depois de ver contagens agregadas).
 - **O probe é treinado no benchmark** (as predições do subconjunto "probe acerta" vêm de um leitor supervisionado), enquanto o Laya é zero-shot.
 - **Fine-tuned:** contaminado em treino e dev; temperaturas fora de [0,5; 5] para perguntas com ≥ 11 opções são ajustadas pelo pacote (o typed-decisions tem ≤ 5, sem efeito aqui). O bloco `training` do config do base é idêntico ao do fine-tuned (possivelmente copiado); não usei.
 - **Duplicatas e features raras:** há features com ativações idênticas; as de maior razão de chances têm pouquíssimas ativações em dev e teste.
-- Apenas uma semente (0) e uma largura (16×) por SAE; não variei k (a variante k = 64, "se houver tempo", não foi feita).
+- Apenas uma semente (0) e uma largura (16×) por SAE. A variante k = 64 foi treinada e medida em qualidade (seção 3), mas as análises de features e a ablação só existem para k = 32.
 
-## 8. Reprodutibilidade
+## 9. Reprodutibilidade
 
 - **Código:** branch `experiment/sae-features` (a partir de `experiment/linear-probe`). Ambiente: `uv.lock` (sha256 `68a486f3…`), Python 3.14.10, torch 2.15.0+cu132 (CUDA 13.2), laya 0.4.30, transformers 5.22.2; GPU: NVIDIA B200 MIG 3g.90gb; `pip_freeze.txt` ao lado.
 - **Sementes:** 0 (inicialização do SAE, ordem dos dados, bootstrap, probes fora da dobra). Revisões: `convaiinnovations/laya` `7b928d82…` (multilíngue) e `e333cb7c…` (par em inglês); dataset `c76749ec…`.
 - **Jobs (Sauron, B200 MIG, 89 GB):** extração de todos os tokens 3603 (curto) / 3605; corpus 3604 / 3606; treino do SAE 3609 (curto), 3613 (`enc_17`), 3614 (`enc_08`), 3615 (literal), 3628 (dom20); probes fora da dobra 3610;
   qualidade 3619 (`enc_08`), 3621 (`enc_17`), 3623 (literal), 3629 (dom20), 3635 (base), 3643 (cópia); features 3618/3626/3631 (`enc_08`, 3631 = estrato por visão), 3620/3627/3632 (`enc_17`, 3632 = estrato por visão);
   Parte C: extração 3617 (curto) / 3625, tokens 3624 / 3633, SAE do base 3634, features base 3636, features fine-tuned 3637, comparação 3638, marcadores massivos 3640, cópia do SAE 3641, features da cópia 3644, comparação com cópia 3647, cartões das features que mais mudam 3656.
+  Ablação causal: 3874 (`enc_08`) e 3875 (`enc_17`).
 - **RAM medida (pico, pedido):** corpus 1,8 GiB (3g); extração de tokens 8,0 GiB (8g, page cache do memmap); treino 6,0 GiB (8g); qualidade 2,8–4,0 GiB; features 2,7–4,4 GiB; Parte C: extração 9,1 GiB (10g), tokens 10,0 GiB (10g), SAE do base 7,8 GiB (10g).
 - **Artefatos** (relativos à raiz; os parquets de estatísticas e `attribution/` não vão para o git: ficam no cluster em `~/workspace/sae-decision-models/results/sae_features/` e no Mac):
   `sae_quality.csv` e `sae_quality_flags_*.json`; `<SAE>/feature_stats_<visão>_<critério>.parquet` (colunas `cmh_*` e `cmh_qp_*`), `feature_stats_prior_bias.parquet`, `feature_stats_attribution.parquet`, `prior_bias_summary.json`, `decision_views.parquet`;
   `feature_cards/<SAE>/` (cartões com campo "Interpretação" em branco); `part_c/` (comparação, acurácias, marcadores massivos); pesos e configs em `checkpoints/sae/<SAE>/{sae.pt,train_meta.json,train_log.csv}` (6 SAEs, ignorados pelo git);
+  `ablation/<SAE>/{selected_features.json,dev/,test/}` (ablação; `headline_dm.npz` guarda o Δm por decisão das condições principais);
   módulo reutilizável `src/sae.py` + `src/sae_intervention.py` (zera ou fixa features preservando o erro de reconstrução; o limiar de massivos vem no checkpoint).
