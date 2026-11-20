@@ -261,13 +261,29 @@ def main():
                     "precision": "single-question FP32; TF32 disabled", "seed": 0})
         for index,(case_index,case,qid) in enumerate(todo):
             started = time.monotonic()
+            print(f"[position] START case={case['case_id']} q={qid} patch={case_index < args.patch_cases}", flush=True)
             observations, snapshots = behavioral(runner, case, qid, donors[case["case_id"]])
             patches = patching(runner, case, qid, snapshots, args.n_null) if case_index < args.patch_cases else []
+            activation_path = None
+            if case_index < args.patch_cases:
+                destination = out / "activations" / task_path(case, qid).with_suffix(".pt").name
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                temporary = destination.with_suffix(".pt.tmp")
+                with temporary.open("wb") as stream:
+                    torch.save({"case_id": case["case_id"], "qid": qid,
+                                "orders": [{"order": list(order), "positions": snapshot["positions"],
+                                            "hidden": snapshot["hidden"]}
+                                           for order,snapshot in snapshots.items()]}, stream)
+                    stream.flush()
+                    os.fsync(stream.fileno())
+                os.replace(temporary, destination)
+                activation_path = str(destination.relative_to(out))
             atomic_json(task_path(case,qid), {"case_id": case["case_id"], "workflow": case["workflow"],
                         "qid": qid, "gold_id": str(case["gold"][qid]["label"]),
                         "semantic_ids": list(next(conditions(case["questions"][qid], case["state"],
                                                               case["state"], case["case_id"], qid))[1]["criteria"]),
-                        "behavior": observations, "patches": patches, "elapsed_s": time.monotonic()-started})
+                        "behavior": observations, "patches": patches, "activations": activation_path,
+                        "elapsed_s": time.monotonic()-started})
             print(f"[position] {index+1}/{len(todo)} case={case['case_id']} q={qid} "
                   f"orders={len(observations)} patches={len(patches)} seconds={time.monotonic()-started:.1f}", flush=True)
     missing = [str(task_path(c,q)) for _,c,q in tasks if not task_path(c,q).exists()]

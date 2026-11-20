@@ -39,7 +39,9 @@ Renaming/empty/swapped controls change content or tokenization and are diagnosti
 not pure interventions on ordinal position.
 
 Save raw logits, official probabilities/choice, identity mapping, marker positions, token
-spans and lengths. Stop if state/options are truncated or alternatives collapse. Assert
+spans and lengths. For the patched cases, also save the two orders' marker vectors in all
+layers as CPU tensors, allowing later representation analysis without rerunning inference.
+Stop if state/options are truncated or alternatives collapse. Assert
 that reordering preserves token spans by alternative, instruction tokens, and state tokens.
 Use 1024/256 budgets, single-question FP32, no TF32, eval/inference mode, seed 0.
 
