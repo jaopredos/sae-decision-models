@@ -16,3 +16,6 @@ results/probe_oof_smoke/
 results/sae_features/*/*.parquet
 results/sae_features/*/attribution/
 results/sae_features/part_c*/*.parquet
+
+# Position-order experiments: raw per-decision outputs and environments
+results/position_mechanism/

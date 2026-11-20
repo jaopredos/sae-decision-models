@@ -1,0 +1,24 @@
+#!/bin/bash
+set -euo pipefail
+export PYTHONUNBUFFERED=1
+export TOKENIZERS_PARALLELISM=false
+export LAYA_CUDA_AMP=fp32
+export PIP_FREEZE_OUT=results/position_mechanism/environment/pip_freeze.txt
+source scripts/sauron/uv_env.sh
+
+# Validate pure helpers in the exact job environment before any model inference.
+uv run --frozen python -m unittest discover -s tests -p 'test_position*.py' -v
+
+# The pilot cannot silently continue after a failed alignment, parity or patching check.
+# The 15-minute limit applies after dependency setup/model cache is initialized by the job.
+timeout 15m uv run --frozen python run_position.py \
+    --subset discovery --limit 4 --patch-cases 2 --n-null 2 \
+    --out results/position_mechanism/pilot
+test -s results/position_mechanism/pilot/discovery/COMPLETE.json
+echo '[position] PILOT PASSED: parity, token alignment, no-op and final-layer positive control'
+
+if [[ "${POSITION_PHASE:-pilot}" == "discovery" ]]; then
+    uv run --frozen python run_position.py \
+        --subset discovery --patch-cases 64 --n-null 4 \
+        --out results/position_mechanism/collection_v1
+fi
