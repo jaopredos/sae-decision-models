@@ -1,0 +1,110 @@
+[
+  {
+    "condition": "empty",
+    "metric": "flip_any",
+    "difference": 0.13127413127413126,
+    "ci": [
+      0.0746843218615247,
+      0.1865079365079365
+    ],
+    "note": "paired by case and question"
+  },
+  {
+    "condition": "empty",
+    "metric": "tv_to_mean",
+    "difference": 0.11422825554057162,
+    "ci": [
+      0.10097460038141416,
+      0.1263026352509867
+    ],
+    "note": "paired by case and question"
+  },
+  {
+    "condition": "empty",
+    "metric": "centered_logit_rms",
+    "difference": 0.35950196063896434,
+    "ci": [
+      0.3423338411955667,
+      0.3762938301800527
+    ],
+    "note": "paired by case and question"
+  },
+  {
+    "condition": "empty",
+    "metric": "normalized_entropy",
+    "difference": -0.041449766997044515,
+    "ci": [
+      -0.06480402932761181,
+      -0.018551675674127212
+    ],
+    "note": "paired by case and question"
+  },
+  {
+    "condition": "swapped_state",
+    "metric": "flip_any",
+    "difference": 0.0,
+    "ci": null,
+    "note": "Aggregate difference is structurally zero: complete permutation of states within question bundles."
+  },
+  {
+    "condition": "swapped_state",
+    "metric": "tv_to_mean",
+    "difference": 4.286575384653114e-19,
+    "ci": null,
+    "note": "Aggregate difference is structurally zero: complete permutation of states within question bundles."
+  },
+  {
+    "condition": "swapped_state",
+    "metric": "centered_logit_rms",
+    "difference": -1.0716438461632785e-18,
+    "ci": null,
+    "note": "Aggregate difference is structurally zero: complete permutation of states within question bundles."
+  },
+  {
+    "condition": "swapped_state",
+    "metric": "normalized_entropy",
+    "difference": 1.7146301538612457e-18,
+    "ci": null,
+    "note": "Aggregate difference is structurally zero: complete permutation of states within question bundles."
+  },
+  {
+    "condition": "renamed_ids",
+    "metric": "flip_any",
+    "difference": -0.07335907335907337,
+    "ci": [
+      -0.14588399805447472,
+      -0.0038022813688212928
+    ],
+    "note": "paired by case and question"
+  },
+  {
+    "condition": "renamed_ids",
+    "metric": "tv_to_mean",
+    "difference": -0.007488999442764809,
+    "ci": [
+      -0.013773234071392335,
+      -0.0008823274006827641
+    ],
+    "note": "paired by case and question"
+  },
+  {
+    "condition": "renamed_ids",
+    "metric": "centered_logit_rms",
+    "difference": -0.06339154796796863,
+    "ci": [
+      -0.07870942503679941,
+      -0.04820312119627467
+    ],
+    "note": "paired by case and question"
+  },
+  {
+    "condition": "renamed_ids",
+    "metric": "normalized_entropy",
+    "difference": 0.12233108622203775,
+    "ci": [
+      0.09528989889906789,
+      0.14930186244264843
+    ],
+    "note": "paired by case and question"
+  }
+]

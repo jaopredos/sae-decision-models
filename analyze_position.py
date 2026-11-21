@@ -267,7 +267,7 @@ def plots(results, patch_summary, out):
         ax.set_xticks(range(len(results)), [labels[r["condition"]] for r in results], rotation=15)
         ax.set_title(title, fontsize=12)
         ax.set_ylabel("%" if metric == "flip_any" else "Distância TV média × 100")
-    fig.suptitle("Laya multilíngue · descoberta · 1.020 casos", fontsize=14)
+    fig.suptitle(f"Laya multilíngue · {results[0]['cases']:,} casos".replace(",", "."), fontsize=14)
     fig.savefig(out/"behavior.png", dpi=180)
     plt.close(fig)
     table = pd.DataFrame(patch_summary)
