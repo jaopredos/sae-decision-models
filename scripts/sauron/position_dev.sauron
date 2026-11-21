@@ -1,0 +1,12 @@
+#!/bin/bash
+set -euo pipefail
+export PYTHONUNBUFFERED=1
+export TOKENIZERS_PARALLELISM=false
+export LAYA_CUDA_AMP=fp32
+export PIP_FREEZE_OUT=results/position_mechanism/dev_replication_v1/environment/pip_freeze.txt
+source scripts/sauron/uv_env.sh
+uv run --frozen python -m unittest discover -s tests -p 'test_position*.py' -v
+uv run --frozen python run_position.py \
+    --subset dev --patch-cases 64 --n-null 4 \
+    --confirmatory-protocol docs/position-mechanism/DEV_REPLICATION.md \
+    --out results/position_mechanism/dev_replication_v1

@@ -1,0 +1,17 @@
+{
+  "cases": 1020,
+  "decisions": 1541,
+  "behavior_forward_rows": {
+    "original": 29704,
+    "empty": 29704,
+    "swapped_state": 29704,
+    "renamed_ids": 29704
+  },
+  "patched_cases": 64,
+  "patched_decisions": 94,
+  "patch_forward_rows": 37600,
+  "parity_max_probability_error": 0.0,
+  "noop_max_logit_error": 0.0,
+  "final_patch_max_logit_error": 0.0,
+  "manifest_sha256": "fa83dbe02aaa0b6ea1bbb7a0e664ff2ba39f8835d6b96d7ae7822e2d4673e33b"
+}

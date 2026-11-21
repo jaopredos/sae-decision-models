@@ -1,0 +1,8 @@
+name: position-dev-replication
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+memory: 16g
+cpus: 4
+max_time: 1h
+workspace: sae-position-mechanism
