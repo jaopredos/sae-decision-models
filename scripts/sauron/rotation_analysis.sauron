@@ -1,0 +1,13 @@
+# Etapa 7: análise das rotações (A1 a A4 da emenda 6) sobre a extração do job rotation-extract.
+#
+#   sauron submit -c scripts/sauron/jobs/rotation-analysis.yaml scripts/sauron/rotation_analysis.sauron
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+for SPLIT in train test; do
+    [[ -f "data/activations/rotation/${SPLIT}/meta.json" ]] || die "falta data/activations/rotation/${SPLIT}: rode antes o rotation-extract"
+done
+uv run --frozen python run_rotation_analysis.py --rot-dir data/activations/rotation --out results/sae_features/rotation --device cuda

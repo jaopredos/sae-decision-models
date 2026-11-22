@@ -1,0 +1,14 @@
+# Estabilidade do ranking de features entre sementes do SAE (PROTOCOLO.md, emenda 6, parte B). Roda para enc_08 e enc_17.
+#
+#   sauron submit -c scripts/sauron/jobs/seed-stability.yaml scripts/sauron/seed_stability.sauron
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+for spec in "enc_08 ml_enc08_k32 ml_enc08_k32_s1" "enc_17 ml_enc17_k32 ml_enc17_k32_s1"; do
+    set -- ${spec}
+    [[ -f "results/sae_features/$3/decision_views.parquet" ]] || die "falta results/sae_features/$3 (rode o features-*-s1)"
+    uv run --frozen python run_seed_stability.py --layer "$1" --a "$2" --b "$3"
+done

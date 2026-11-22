@@ -1,0 +1,17 @@
+# Estabilidade entre sementes do SAE (pareamento de features e das listas da ablação), enc_08 e enc_17.
+#
+#   sauron submit -c scripts/sauron/jobs/seed-stability.yaml scripts/sauron/seed_stability.sauron
+
+name: seed-stability
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# Medido: partc-compare-copy (pareamento de 16.384 x 16.384 features) pico 2,9 GiB; aqui 12.288 features. 2,9 / 0,7 = 4,1 -> 4g.
+memory: 4g
+cpus: 2
+max_time: 30m
+
+workspace: sae-decision-models
+
+env:
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

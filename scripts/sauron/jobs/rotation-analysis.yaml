@@ -1,0 +1,17 @@
+# Análise das rotações de opções (PROTOCOLO.md, emenda 6, parte A): comportamento, estabilidade do probe, eta^2 por camada e por feature, ligação com a ablação.
+#
+#   sauron submit -c scripts/sauron/jobs/rotation-analysis.yaml scripts/sauron/rotation_analysis.sauron
+
+name: rotation-analysis
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# 1ª ESTIMATIVA (nenhuma medida ainda): carrega uma camada por vez (~110 MB no treino) mais os vetores do probe (6.000 x 5 x 768 float32 no treino da etapa 3, ~90 MB) e os do teste rotacionado.
+memory: 8g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

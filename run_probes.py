@@ -55,7 +55,16 @@ def boot_diff(a_correct: np.ndarray, b_correct: np.ndarray, cases: np.ndarray, s
     return float(diff.mean()), float(lo), float(hi)
 
 
-def plot(by_layer: pd.DataFrame, refs: dict, best_stem: str, path: Path):
+TEXT = {"pt": {"probe": "Probe linear", "control": "Controle (rótulos embaralhados)", "best": "melhor camada (dev)",
+                "x": "camada  (emb · backbone 01–22 · final_norm · cabeça h1–h2)", "y": "acurácia no teste (vs. argmax do gabarito)",
+                "title": "Probe linear por camada — Laya multilingual, typed-decisions (média ± dp, 3 seeds)"},
+        "en": {"probe": "Linear probe", "control": "Control (shuffled labels)", "best": "best layer (dev)",
+                "x": "layer  (emb · backbone 01-22 · final norm · decision head h1-h2)", "y": "test accuracy (vs. gold argmax)",
+                "title": "Per-layer linear probe: Laya multilingual on typed-decisions (mean ± sd, 3 seeds)"}}
+
+
+def plot(by_layer: pd.DataFrame, refs: dict, best_stem: str, path: Path, lang: str = "pt"):
+    T = TEXT[lang]
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -71,7 +80,7 @@ def plot(by_layer: pd.DataFrame, refs: dict, best_stem: str, path: Path):
     fig, ax = plt.subplots(figsize=(10, 4.8), dpi=150)
     fig.patch.set_facecolor(surface)
     ax.set_facecolor(surface)
-    for kind, color, name in (("probe", blue, "Probe linear"), ("control", orange, "Controle (rótulos embaralhados)")):
+    for kind, color, name in (("probe", blue, T["probe"]), ("control", orange, T["control"])):
         d = agg[agg["kind"] == kind].sort_values("layer_idx")
         ax.fill_between(x, d["mean"] - d["std"].fillna(0), d["mean"] + d["std"].fillna(0),
                         color=color, alpha=0.18, linewidth=0)
@@ -89,16 +98,16 @@ def plot(by_layer: pd.DataFrame, refs: dict, best_stem: str, path: Path):
     bi = labels.index(layer_label(best_stem))
     bm = agg[(agg["kind"] == "probe")].sort_values("layer_idx")["mean"].iloc[bi]
     ax.plot([bi], [bm], marker="o", markersize=9, markerfacecolor="none", markeredgecolor=ink, markeredgewidth=1.5)
-    ax.annotate("melhor camada (dev)", (bi, bm), xytext=(-6 if bi == 0 else 0, 12), textcoords="offset points",
+    ax.annotate(T["best"], (bi, bm), xytext=(-6 if bi == 0 else 0, 12), textcoords="offset points",
                 ha="left" if bi == 0 else "center", fontsize=9, color=ink, bbox=dict(facecolor=surface, edgecolor="none", pad=1.5))
     head_start = labels.index("enc_final") + 0.5
     ax.axvline(head_start, color=grid, linewidth=1, zorder=0)
     ax.set_xticks(x)
     ax.set_xticklabels([l.replace("enc_", "").replace("final", "norm").replace("head_", "h") for l in labels],
                        fontsize=8, color=ink2)
-    ax.set_xlabel("camada  (emb · backbone 01–22 · final_norm · cabeça h1–h2)", color=ink2)
-    ax.set_ylabel("acurácia no teste (vs. argmax do gabarito)", color=ink2)
-    ax.set_title("Probe linear por camada — Laya multilingual, typed-decisions (média ± dp, 3 seeds)",
+    ax.set_xlabel(T["x"], color=ink2)
+    ax.set_ylabel(T["y"], color=ink2)
+    ax.set_title(T["title"],
                  color=ink, fontsize=11, loc="left")
     ax.grid(axis="y", color=grid, linewidth=0.8)
     for s in ("top", "right"):
