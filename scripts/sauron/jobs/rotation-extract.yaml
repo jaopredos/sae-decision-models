@@ -1,0 +1,18 @@
+# Rotações cíclicas das opções, treino e teste: probabilidades e vetores dos marcadores nas 26 camadas (~3,4 vezes mais linhas que a extração da etapa 3).
+#
+#   sauron submit -c scripts/sauron/jobs/rotation-extract.yaml scripts/sauron/rotation.sauron
+
+name: rotation-extract
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# 1ª ESTIMATIVA (nenhuma medida ainda): ~72 mil marcadores x 26 camadas x 768 x 2 B ~ 2,9 GB só no treino, mais cópias na gravação. A extração da etapa 3 (mesma estrutura, 3,4x menos linhas) teve pico de 4,7 GiB.
+memory: 12g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  LIMIT: "0"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

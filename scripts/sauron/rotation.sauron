@@ -1,0 +1,17 @@
+# Etapa 7 (PROTOCOLO.md, emenda 6, parte A): o Laya sob rotações cíclicas da ordem das opções, treino e teste.
+#
+#   sauron submit -c scripts/sauron/jobs/rotation-extract.yaml scripts/sauron/rotation.sauron
+#
+# LIMIT > 0 (curto): só N casos de cada split, saída em data/activations/rotation_smoke.
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+LIMIT="${LIMIT:-0}"
+if (( LIMIT > 0 )); then OUT=data/activations/rotation_smoke; else OUT=data/activations/rotation; fi
+for SPLIT in train test; do
+    uv run --frozen python run_rotation_extract.py --split "${SPLIT}" --limit "${LIMIT}" --device cuda --out "${OUT}"
+done
+du -sh "${OUT}"
