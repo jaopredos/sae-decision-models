@@ -1,0 +1,19 @@
+# Qualidade e fidelidade a jusante do SAE de semente 1 em enc_17.
+#
+#   sauron submit -c scripts/sauron/jobs/sae-quality-enc17-s1.yaml scripts/sauron/sae_quality.sauron
+
+name: sae-quality-enc17-s1
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# Medido: sae-quality de enc_17, semente 0, pico entre 3,4 e 4,0 GiB; 4,0 / 0,7 = 5,7 -> 6g.
+memory: 6g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  LAYER: "enc_17"
+  NAME: "ml_enc17_k32_s1"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

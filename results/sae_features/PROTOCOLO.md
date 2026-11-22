@@ -228,3 +228,37 @@ O mesmo teste mostrou que o efeito de K = 20 features é pequeno (neg: Δm ≈ +
 - Um efeito só conta como **relevante** se, além do item 4, a **acurácia total não cair** (variação de acurácia em todas as decisões ≥ 0). Caso contrário o texto diz "efeito grande, mas não específico: a intervenção quebra decisões certas".
 - A variante `pred` é a que responde à pergunta causal (efeito das features no marcador da opção escolhida); a `all` é reportada como controle de escala e de calibração, não como evidência de mecanismo.
 - Um recurso de implementação do nulo: quando a faixa de frequência de uma feature não tem candidatos livres (a faixa mais alta é pequena), o sorteio usa a faixa vizinha mais próxima; o número de sorteios nessa situação é gravado em `summary.json` (no smoke: 44 de 1.008).
+
+## Emenda 6: rotação de opções (ponte com o viés posicional) e segunda semente do SAE (escrita antes de qualquer execução, em 22/11/2026)
+
+Motivo: o trabalho final trata de viés posicional em modelos System One, e até aqui as opções nunca foram permutadas, então posição e conteúdo da opção não estão separados (o viés de índice 3 em `choice`, por exemplo, é ambíguo).
+A semente única dos SAEs é a outra fragilidade. Nada abaixo foi visto antes de escrever.
+
+### Parte A: rotação de opções
+
+**Desenho.** Para cada decisão com k opções, as k rotações cíclicas da ordem de apresentação: `option_order[j] = (j + r) mod k`, r = 0..k−1 (r = 0 é a ordem original; o pacote `laya` aceita `option_order` em `choice`, `score` e `noul`).
+O gabarito não muda. Como cada opção passa uma vez por cada posição, o desenho é balanceado: a média sobre as rotações separa a preferência por **posição** da preferência por **conteúdo**.
+Treino (para as análises A3 e A4) e teste (replicação e A1, A2). Os mesmos `predict` oficiais, vetores nos `[MASK]` de todas as camadas e probabilidades por rotação.
+
+**A1, comportamento.** (i) Preferência posicional: P(escolher a posição j), média sobre rotações, contra 1/k, por tipo de pergunta, com IC95% por bootstrap sobre casos. (ii) Taxa de troca: fração de decisões cuja opção escolhida muda em alguma rotação.
+(iii) Acurácia por rotação e média, contra a da ordem original. **Expectativa:** o viés de índice 3 em `choice` é em parte posicional. **Critério:** há viés posicional em `choice` se, no teste, alguma posição se afasta de 1/k em pelo menos 5 p.p. com IC95% fora de zero.
+Se a preferência por posição for < 5 p.p. em todos os tipos, o texto dirá que o viés de prior da seção 4 é majoritariamente de conteúdo.
+
+**A2, o probe lê conteúdo ou posição.** O probe linear da etapa 3 (camadas `enc_08` e `enc_17`, wd e treino da etapa 3, **só na ordem original**) aplicado aos marcadores rotacionados do teste. Medida: amplitude da acurácia entre a rotação de melhor e a de pior desempenho, para o probe e para o Laya, com IC por bootstrap sobre casos.
+**Expectativa:** o probe é mais estável (menor amplitude) que o Laya. **Critério:** "mais estável" se a amplitude do probe for menor que a do Laya com IC95% da diferença fora de zero.
+
+**A3, onde a posição e o conteúdo estão nas camadas.** ANOVA de dois fatores por pergunta sobre o vetor do marcador, camada a camada (o desenho de rotações cíclicas é um quadrado latino: posição e conteúdo são ortogonais): η² de posição e η² de conteúdo (soma de quadrados entre grupos sobre a soma total, somando as 768 dimensões, média sobre perguntas ponderada por n).
+**Expectativa:** a posição domina nas camadas iniciais e o conteúdo cresce com a profundidade. Descritivo: sem limiar de decisão.
+
+**A4, ligação com as features e a ablação.** η² de posição e de conteúdo de cada feature do SAE (camadas 8 e 17, k = 32, seed 0) nos marcadores do treino rotacionado. Compara-se a média de η² de posição das listas neg da ablação (variante `pred`, K = 20 e 100) com a de 100 conjuntos aleatórios pareados por frequência de ativação (mesma regra do nulo da emenda 5).
+**Expectativa:** sem expectativa forte. **Critério:** a lista é "mais posicional que o acaso" se a média de η² de posição ficar acima do percentil 95 do nulo; "mais de conteúdo" se η² de conteúdo ficar acima do percentil 95. O teste rotacionado só replica o que o treino mostrar.
+
+**Limites declarados.** Rotações cíclicas não esgotam as permutações (k! para k ≥ 3); a análise é do efeito de posição por deslocamento, não de todas as ordens. `score` tem níveis ordenados: permutar a ordem de apresentação mantém os rótulos "level i" no texto, então o conteúdo continua identificável, mas é um tipo de pergunta diferente dos demais; reporto por tipo.
+Os η² usam o treino rotacionado em todos os casos (descoberta e dev juntos), sem selecionar nada.
+
+### Parte B: segunda semente do SAE
+
+SAE com `--seed 1` (mesmos hiperparâmetros, ordem dos dados e inicialização diferentes), k = 32, em `enc_08` e `enc_17`. Medidas: (i) qualidade (mesmos limiares da emenda 1); (ii) fração de features pareadas com a semente 0 por vizinho mútuo (cosseno ≥ 0,7);
+(iii) **estabilidade da lista**: das 20 features da lista neg da semente 0 (variante `pred`), a fração com correspondente pareado na semente 1 que também está entre as 100 de maior atribuição negativa da semente 1; (iv) a ablação (variante `pred`, K = 20) com a lista da semente 1.
+**Expectativa:** qualidade equivalente; pareamento alto (> 80%) porque as camadas são as mesmas e os dados também; estabilidade da lista moderada. **Critério:** a conclusão da ablação é "robusta à semente" se, na semente 1, o efeito de K = 20 tiver o mesmo sinal, ficar acima do percentil 95 do nulo e levar à mesma leitura de relevância;
+a lista é "estável" se (iii) ≥ 50%. Senão, o texto diz que o ranking de features depende da semente. O item (iv) é o mais caro e fica condicionado ao tempo do cluster; se não rodar, o texto diz.
