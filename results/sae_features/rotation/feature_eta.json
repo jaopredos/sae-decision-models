@@ -1,0 +1,166 @@
+{
+ "enc_08": {
+  "train": {
+   "K20": {
+    "eta2_position": {
+     "neg_list": 0.10214073934106904,
+     "null_mean": 0.10914247603161377,
+     "null_p5": 0.07450561250452549,
+     "null_p95": 0.14030982103262452,
+     "above_p95": false
+    },
+    "eta2_content": {
+     "neg_list": 0.6837702917314505,
+     "null_mean": 0.5147164486482384,
+     "null_p5": 0.4039175615117547,
+     "null_p95": 0.6306391402120949,
+     "above_p95": true
+    }
+   },
+   "K100": {
+    "eta2_position": {
+     "neg_list": 0.05479544994330831,
+     "null_mean": 0.09726761120225187,
+     "null_p5": 0.09120958602918611,
+     "null_p95": 0.10236964081288903,
+     "above_p95": false
+    },
+    "eta2_content": {
+     "neg_list": 0.7163462861133286,
+     "null_mean": 0.4682161309346889,
+     "null_p5": 0.446792757478498,
+     "null_p95": 0.497603476461942,
+     "above_p95": true
+    }
+   },
+   "supported_features": {
+    "n": 543,
+    "median_eta2_position": 0.03265461568377914,
+    "median_eta2_content": 0.33438700083002487,
+    "share_position_gt_content": 0.11970534069981584
+   }
+  },
+  "test": {
+   "K20": {
+    "eta2_position": {
+     "neg_list": 0.10165666671648772,
+     "null_mean": 0.10788600018863352,
+     "null_p5": 0.0723573253881414,
+     "null_p95": 0.13869060682557988,
+     "above_p95": false
+    },
+    "eta2_content": {
+     "neg_list": 0.6842058703964385,
+     "null_mean": 0.5153557137569595,
+     "null_p5": 0.40551712154121433,
+     "null_p95": 0.6325864387787034,
+     "above_p95": true
+    }
+   },
+   "K100": {
+    "eta2_position": {
+     "neg_list": 0.0544008876135337,
+     "null_mean": 0.09653437698948718,
+     "null_p5": 0.09093950288794245,
+     "null_p95": 0.10174419246264604,
+     "above_p95": false
+    },
+    "eta2_content": {
+     "neg_list": 0.7152929847727948,
+     "null_mean": 0.468210197009309,
+     "null_p5": 0.44680170092325877,
+     "null_p95": 0.4971569680254427,
+     "above_p95": true
+    }
+   },
+   "supported_features": {
+    "n": 543,
+    "median_eta2_position": 0.03424438668187926,
+    "median_eta2_content": 0.33268987471163164,
+    "share_position_gt_content": 0.1289134438305709
+   }
+  }
+ },
+ "enc_17": {
+  "train": {
+   "K20": {
+    "eta2_position": {
+     "neg_list": 0.12482160386086956,
+     "null_mean": 0.0546686114366915,
+     "null_p5": 0.05029141918587485,
+     "null_p95": 0.06085937309189062,
+     "above_p95": true
+    },
+    "eta2_content": {
+     "neg_list": 0.5454352465931886,
+     "null_mean": 0.4089323703125389,
+     "null_p5": 0.3830923220097364,
+     "null_p95": 0.43967086902378155,
+     "above_p95": true
+    }
+   },
+   "K100": {
+    "eta2_position": {
+     "neg_list": 0.07038483706564254,
+     "null_mean": 0.04223440923202367,
+     "null_p5": 0.04056007698560975,
+     "null_p95": 0.044653338291199426,
+     "above_p95": true
+    },
+    "eta2_content": {
+     "neg_list": 0.4083269755513433,
+     "null_mean": 0.2758489235160416,
+     "null_p5": 0.2625685225275,
+     "null_p95": 0.28874812543139156,
+     "above_p95": true
+    }
+   },
+   "supported_features": {
+    "n": 626,
+    "median_eta2_position": 0.018472355885815424,
+    "median_eta2_content": 0.125465340793057,
+    "share_position_gt_content": 0.06869009584664537
+   }
+  },
+  "test": {
+   "K20": {
+    "eta2_position": {
+     "neg_list": 0.12480148319500546,
+     "null_mean": 0.055936095388848986,
+     "null_p5": 0.05187514481207109,
+     "null_p95": 0.0612637667108824,
+     "above_p95": true
+    },
+    "eta2_content": {
+     "neg_list": 0.5535996104547707,
+     "null_mean": 0.4046245011383536,
+     "null_p5": 0.378566192729342,
+     "null_p95": 0.4352546710198032,
+     "above_p95": true
+    }
+   },
+   "K100": {
+    "eta2_position": {
+     "neg_list": 0.07077099480426821,
+     "null_mean": 0.042070264740620374,
+     "null_p5": 0.04039119313192354,
+     "null_p95": 0.044514756862034745,
+     "above_p95": true
+    },
+    "eta2_content": {
+     "neg_list": 0.4116840066691597,
+     "null_mean": 0.2764108313467192,
+     "null_p5": 0.26267053773128135,
+     "null_p95": 0.2901244436774507,
+     "above_p95": true
+    }
+   },
+   "supported_features": {
+    "n": 626,
+    "median_eta2_position": 0.019121038250030337,
+    "median_eta2_content": 0.12668849862718357,
+    "share_position_gt_content": 0.07188498402555911
+   }
+  }
+ }
+}

@@ -1,7 +1,7 @@
 # SAE e features que explicam o erro do Laya no typed-decisions (etapas 4 e 5)
 
-Tudo aqui é **correlacional**, exceto a fidelidade a jusante (que mede o SAE, não as features). A **ablação causal** da seção 7 foi feita depois, com protocolo próprio. Critérios e limiares foram fixados antes dos jobs em `PROTOCOLO.md`; as cinco
-emendas (feitas por causa do que os dados mostraram; a 4 e a 5 são da ablação) estão datadas lá e resumidas na seção 2 e na seção 7. As tabelas completas, geradas dos artefatos
+Tudo aqui é **correlacional**, exceto a fidelidade a jusante (que mede o SAE, não as features). A **ablação causal** da seção 7 foi feita depois, com protocolo próprio. Critérios e limiares foram fixados antes dos jobs em `PROTOCOLO.md`; as seis
+emendas (feitas por causa do que os dados mostraram; a 4 e a 5 são da ablação, a 6 da rotação e da semente) estão datadas lá e resumidas na seção 2 e nas seções 7 a 9. As tabelas completas, geradas dos artefatos
 sem interpretação, estão em `REPORT_tables.md`.
 
 ## Resumo
@@ -20,6 +20,8 @@ sem interpretação, estão em `REPORT_tables.md`.
 - **Ablação causal (seção 7):** zerar as 20 features de maior atribuição negativa no marcador da opção escolhida move a margem na direção da resposta correta e **replica no teste** nas duas camadas
   (muito acima de conjuntos aleatórios pareados). Mas o efeito **não é relevante nem específico**: em `enc_08` é ~2% da margem (corrige 0,8% dos erros) e em `enc_17` é ~20% da margem, porém a acurácia
   total **cai** (−0,7 p.p. no dev, −1,4 p.p. no teste), porque a intervenção quebra 17% das decisões certas. A previsão de primeira ordem acerta bem o efeito de features individuais (Spearman 0,90–0,93).
+- **Rotação de opções (seção 8):** o viés de prior em `choice` **não é posicional** (maior desvio por posição 3,2 p.p., abaixo do critério de 5 p.p.): é de conteúdo. Em `score` o Laya quase nunca escolhe a primeira opção (−18 p.p.). Com a ordem balanceada, a acurácia do Laya (0,334) fica indistinguível do acaso (0,318). O probe de `enc_08` depende da ordem original (0,50 → 0,27 nas rotações); o de `enc_17` mantém conteúdo (0,52 → 0,42, acaso ~0,24).
+- **Sementes (seção 9):** o efeito agregado da ablação se repete com a semente 1 nas duas camadas, mas só ~50% das features têm correspondente e a lista da ablação não é estável (15% e 35%): o ranking de features individuais depende da semente.
 - **Parte C (base × fine-tuned em inglês):** entradas idênticas confirmadas; a configuração comum não distorce o base (0,3625 contra 0,3630). No base, marcadores massivos
   (fora do SAE) ocorrem **só na opção `true` das perguntas `noul`** (em 1/3 delas); nessas, o base responde `true` em 90–92% dos casos quando esse marcador é massivo e em 54–55% quando não é
   (no fine-tuned a relação some: 47% contra 56–57%). Mas atenção: a atribuição por gradiente no fine-tuned explica quase nada de h·g (0–15%) e deve ser lida como diagnóstico.
@@ -216,7 +218,99 @@ Variante `all`: Spearman 0,90 e 0,80, concordância de sinal 90% e 96%, razão 0
 (4% em `enc_08`), porque as features de maior atribuição são muito frequentes; os nulos ficam em ≤ 0,017 logit, bem abaixo dos efeitos, então a conclusão não depende disso. (3) Os p empíricos têm piso de 0,0196. (4) Features duplicadas (ativações quase idênticas) podem contar duas vezes numa lista.
 (5) A variante `pred` zera no marcador da opção escolhida *sem intervenção*; não há variante que zere o marcador da opção correta (a atribuição `a_corr` ficou sem teste causal). (6) Um só SAE por camada (seed 0, k = 32).
 
-## 8. Limitações
+## 8. Rotação de opções: posição ou conteúdo (emenda 6, parte A)
+
+**O que foi feito.** Cada decisão com k opções foi mostrada ao Laya nas k rotações cíclicas da ordem das opções (`option_order` do pacote); o gabarito não muda. Como cada opção passa uma vez por cada posição, a média sobre rotações separa a preferência por **posição** da preferência por **conteúdo**.
+Treino (1.200 casos, 21.300 linhas decisão × rotação) e teste (400 casos, 7.100 linhas); jobs 4173 (extração) e 4179 (análise). A rotação 0 reproduz exatamente a extração da etapa 3 (diferença 0 nas probabilidades e nos vetores). Os números abaixo são do teste; o treino repete o padrão (`rotation/behaviour.json`).
+
+**A1, comportamento.** Desvio da fração de escolhas em cada posição em relação a 1/k (IC95% por bootstrap sobre casos), teste:
+
+| tipo (n decisões) | pos. 0 | pos. 1 | pos. 2 | pos. 3 | pos. 4 |
+|---|---|---|---|---|---|
+| `choice`, 4 opções (400) | +1,8 p.p. | −0,3 | **−3,2** [−4,5; −2,0] | +1,8 | |
+| `choice`, 5 opções (200) | +2,1 | −0,5 | −0,1 | −0,4 | −1,1 |
+| `noul`, 2 opções (600) | −2,1 | +2,1 | | | |
+| `score`, 4 opções (700) | **−18,2** [−19,1; −17,3] | +4,6 | +2,8 | **+10,9** [+9,6; +12,0] | |
+| `score`, 5 opções (100) | −17,6 | +11,0 | +3,2 | −0,8 | +4,2 |
+
+- **Critério da emenda 6 (viés posicional em `choice`: alguma posição a ≥ 5 p.p. de 1/k com IC fora de zero): NÃO atendido.** O maior desvio é 3,2 p.p. O viés de índice que a seção 4 mostrava em `choice` (47% das escolhas no índice 3 contra 9% do gabarito) **não é posicional**: com a posição balanceada, a preferência por posição some. É preferência pelo **conteúdo** da opção que, na ordem original, ocupa o índice 3.
+- **`score` tem um viés posicional grande**: o Laya quase nunca escolhe a primeira opção listada (6,8% contra 25% esperados) e favorece a última. O critério da emenda 6 era para `choice`; este achado é descritivo, mas é o maior efeito posicional medido. `noul` tem ±2 p.p. (abaixo de 5).
+- **Troca de escolha com a rotação** (fração das decisões em que a opção escolhida muda): `choice` 44% (4 opções) e 30% (5 opções); `score` 82% e 91%; `noul` 6%. Nenhuma decisão de `choice` ou `score` escolhe a mesma *posição* em todas as rotações; em `choice` 56% e 70% escolhem sempre a mesma *opção* (conteúdo).
+- **Acurácia**: média sobre as rotações (cada decisão conta uma vez) e a da rotação 0 (a ordem original), contra o acaso esperado:
+
+| tipo | rotação 0 | média das rotações [IC95%] | acaso esperado |
+|---|---|---|---|
+| `choice` | 0,295 | 0,260 [0,234; 0,289] | 0,233 |
+| `noul` | 0,493 | 0,487 [0,443; 0,529] | 0,500 |
+| `score` | 0,282 | 0,276 [0,255; 0,297] | 0,244 |
+| todas | 0,349 | **0,334 [0,317; 0,353]** | 0,318 |
+
+  **Com a ordem das opções balanceada, a acurácia do Laya multilingual (0,334) fica indistinguível do acaso (0,318 está dentro do IC95%)**; a margem de 3 p.p. sobre o acaso que ele tinha na ordem original (0,349) em parte depende dessa ordem. Não testei a diferença pareada entre a rotação 0 e as demais.
+
+**A2, o probe lê conteúdo ou posição.** O probe da etapa 3, treinado **só na ordem original**, aplicado aos marcadores rotacionados do teste, em decisões com k ≥ 4 (rotações 0 a 3; acaso ≈ 0,24):
+
+| camada | acurácia por rotação (0, 1, 2, 3) | amplitude (melhor − pior) |
+|---|---|---|
+| `enc_08` | 0,500 · 0,413 · 0,338 · **0,274** | **0,226** |
+| `enc_17` | 0,519 · 0,455 · 0,424 · **0,423** | 0,096 |
+| Laya | 0,288 · 0,295 · 0,249 · 0,244 | 0,051 |
+
+- **A expectativa da emenda ("o probe é mais estável que o Laya") foi desmentida:** a amplitude do probe é maior que a do Laya nas duas camadas (Laya − probe: −0,175, IC95% [−0,213; −0,127] em `enc_08`; −0,046, IC95% [−0,082; −0,012] em `enc_17`).
+- **`enc_08`**: na rotação 3 o probe cai para 0,274, perto do acaso. A vantagem dele nessa camada depende da posição/ordem das opções, não só do conteúdo.
+- **`enc_17`**: cai de 0,52 para 0,42, mas **continua bem acima do acaso (~0,24) e do Laya (0,24 a 0,29)** nas rotações 1 a 3: o conteúdo da opção é legível nessa camada, ainda que parte do ganho também venha da posição.
+- Em `noul` (2 opções): probe `enc_17` 0,70 → 0,59 e `enc_08` 0,68 → 0,66; Laya 0,49 → 0,48.
+- **Consequência para a etapa 3:** o 0,574 do probe em `enc_17` vem de um probe treinado e testado na ordem original; esta análise mostra que, por conteúdo apenas, o ganho é menor (~0,42 nas rotações 1 a 3 em k ≥ 4, contra 0,52 na ordem original, nas mesmas decisões). Não treinei um probe nas rotações (que mediria a legibilidade do conteúdo sem a posição correlacionada); fica como análise adicional.
+
+**A3, posição e conteúdo por camada** (η² de duas vias do vetor do marcador, por pergunta, quadrado latino; teste; resíduo = variação dentro da mesma posição e opção, isto é, o resto do caso):
+
+| camada | η² posição | η² conteúdo | resíduo |
+|---|---|---|---|
+| `enc_01` | 0,962 | 0,005 | 0,033 |
+| `enc_04` | 0,913 | 0,046 | 0,041 |
+| `enc_08` | 0,132 | 0,775 | 0,093 |
+| `enc_12` | 0,153 | 0,717 | 0,130 |
+| `enc_17` | 0,088 | 0,531 | 0,382 |
+| `enc_22` | 0,034 | 0,438 | 0,529 |
+| `head_2` | 0,056 | 0,416 | 0,527 |
+
+A posição domina até a camada 4 e o conteúdo toma o lugar entre as camadas 4 e 6 (figura `rotation/eta_by_layer.png`); depois o conteúdo decai e o resíduo cresce com a profundidade. Coerente com a expectativa (descritiva, sem limiar). `emb` fica fora (todos os marcadores são o mesmo vetor).
+
+**A4, posição e conteúdo nas features da ablação** (η² por feature nos marcadores; lista neg da variante `pred`, K = 20, contra 100 conjuntos aleatórios pareados por frequência; as listas são as da emenda 5):
+
+| camada | η² posição da lista (nulo p95) | η² conteúdo da lista (nulo p95) | leitura pelo critério |
+|---|---|---|---|
+| `enc_08` | 0,102 (0,140) | 0,684 (0,631) | "mais de conteúdo"; não "mais posicional" |
+| `enc_17` | 0,125 (0,061) | 0,545 (0,440) | mais de conteúdo **e** mais posicional que o acaso |
+
+  Teste e treino dão os mesmos números a três casas. Entre todas as features com suporte, a mediana do η² é 0,033 (posição) e 0,334 (conteúdo) em `enc_08`, e 0,018 e 0,125 em `enc_17`; só 12% e 7% têm mais posição que conteúdo. **As features das listas da ablação codificam sobretudo o conteúdo da opção; em `enc_17` a lista tem também mais posição que o acaso.**
+
+**O que isto sustenta.** Para o trabalho sobre viés posicional: (i) o viés de prior do Laya em `choice` é de conteúdo, não de posição (o critério pré-fixado não foi atendido); (ii) em `score` há viés posicional grande; (iii) a posição é codificada nas camadas iniciais (1 a 4) e o conteúdo a partir da 5; (iv) as features ligadas ao erro na ablação são em maioria de conteúdo.
+**O que não sustenta:** que o Laya "acerta mais do que o acaso" quando a ordem é balanceada (o IC inclui o acaso); nada sobre o fine-tuned (não foi rotacionado).
+
+**Limites e declarações.** Rotações cíclicas não esgotam as permutações (k! para k ≥ 3). O A2 foi restrito a k ≥ 4 e rotações 0 a 3 (para comparar rotações com o mesmo conjunto de decisões): escolha de código feita antes de rodar no cluster e não escrita no protocolo; o adendo da emenda 6 a registra. A figura de preferência por posição troca o painel de `choice` com 5 opções pelo de `score` com 4, depois de eu ver que o efeito grande está em `score`.
+`score` mostra "level i" no texto; permutar a ordem mantém os rótulos, mas é um tipo de pergunta diferente dos outros.
+
+## 9. Estabilidade entre sementes do SAE (emenda 6, parte B)
+
+SAEs de semente 1 (mesmos hiperparâmetros, orçamento e regra de massivos; jobs 4171/4172, qualidade 4174/4176, features 4175/4177, ablação 4180/4181, pareamento 4182).
+
+- **Qualidade equivalente (confirmada):** FVE no dev 0,954 contra 0,954 (`enc_08`) e 0,899 contra 0,899 (`enc_17`); KL da substituição total 0,064 contra 0,065 e 0,014 contra 0,013; o sinalizador de FVE dos marcadores em `enc_08` repete (0,791).
+- **Pareamento de features (expectativa > 80%): DESMENTIDA.** Por vizinho mútuo do decoder (cosseno ≥ 0,7), só **48,6% (`enc_08`) e 52,5% (`enc_17`)** das features da semente 0 têm correspondente na semente 1 (cosseno mediano do vizinho mais próximo 0,70 e 0,74).
+  Parte disso pode ser *feature splitting* (uma feature de uma semente dividida em várias na outra), que o pareamento um-para-um não capta; não verifiquei.
+- **Estabilidade da lista (critério: ≥ 50%): NÃO atendida.** Das 20 features da lista neg da semente 0, só 9 (`enc_08`) e 8 (`enc_17`) têm correspondente; destas, 3 e 7 estão entre as 100 de maior atribuição negativa da semente 1: **15% e 35% das 20.** Os índices não coincidem em nenhum caso.
+- **A conclusão da ablação é robusta à semente (critério atendido)**, mesmo com as listas diferentes. Variante `pred`, K = 20, dev (teste entre parênteses):
+
+| camada | semente | Δm (logit) | % da margem | erros corrigidos | certas quebradas | Δacc (p.p.) | controle pos |
+|---|---|---|---|---|---|---|---|
+| `enc_08` | 0 | +0,040 (+0,033) | 1,9% (1,6%) | 0,8% (0,9%) | 2,4% (1,3%) | −0,2 (+0,2) | −0,55 |
+| `enc_08` | 1 | +0,042 (+0,038) | 2,0% (1,8%) | 1,0% (1,0%) | 2,7% (2,0%) | −0,2 (−0,1) | −0,53 |
+| `enc_17` | 0 | +0,421 (+0,433) | 20% (21%) | 7,6% (6,8%) | 17,7% (16,7%) | −0,7 (−1,4) | −0,91 |
+| `enc_17` | 1 | +0,597 (+0,602) | 29% (29%) | 12,4% (11,5%) | 30,6% (24,4%) | −1,7 (−1,1) | −0,74 |
+
+  Mesmo sinal, acima do percentil 95 do nulo e IC fora de zero nas duas sementes; mesma leitura (desprezível em `enc_08`; grande mas não específico em `enc_17`, com a acurácia total caindo). O tamanho do efeito em `enc_17` varia com a semente (20% contra 29% da margem).
+- **O que isto implica:** o resultado **agregado** da ablação (o efeito de um conjunto de features no marcador escolhido) é reprodutível; o **ranking de features individuais** (listas, cartões, "a feature X") **depende da semente** e deve ser descrito como candidato daquela semente, nunca como "a feature do erro".
+
+## 10. Limitações
 
 - **Correlacional (seções 5 e 6).** O CMH controla pergunta e identidade da opção, não o resto do conteúdo do caso; features significativas são candidatas. A ablação da seção 7 testa só um recorte (as features de maior atribuição, em duas camadas, por zeragem).
 - **Tokens massivos fora do SAE.** Se carregarem informação usada pelo scorer, as features não a mostram; no base em inglês eles estão associados à resposta `true` em `noul` (seção 6).
@@ -225,9 +319,10 @@ Variante `all`: Spearman 0,90 e 0,80, concordância de sinal 90% e 96%, razão 0
 - **O probe é treinado no benchmark** (as predições do subconjunto "probe acerta" vêm de um leitor supervisionado), enquanto o Laya é zero-shot.
 - **Fine-tuned:** contaminado em treino e dev; temperaturas fora de [0,5; 5] para perguntas com ≥ 11 opções são ajustadas pelo pacote (o typed-decisions tem ≤ 5, sem efeito aqui). O bloco `training` do config do base é idêntico ao do fine-tuned (possivelmente copiado); não usei.
 - **Duplicatas e features raras:** há features com ativações idênticas; as de maior razão de chances têm pouquíssimas ativações em dev e teste.
-- Apenas uma semente (0) e uma largura (16×) por SAE. A variante k = 64 foi treinada e medida em qualidade (seção 3), mas as análises de features e a ablação só existem para k = 32.
+- Duas sementes por SAE (0 e 1) e uma largura (16×). A semente 1 só tem qualidade, estatísticas de features, ablação e pareamento (seção 9); os cartões e a Parte C são da semente 0. A variante k = 64 foi treinada e medida em qualidade (seção 3), mas as análises de features e a ablação só existem para k = 32.
+- Rotações só no multilíngue e só em ordem cíclica; o fine-tuned em inglês não foi rotacionado (seção 8).
 
-## 9. Reprodutibilidade
+## 11. Reprodutibilidade
 
 - **Código:** branch `experiment/sae-features` (a partir de `experiment/linear-probe`). Ambiente: `uv.lock` (sha256 `68a486f3…`), Python 3.14.10, torch 2.15.0+cu132 (CUDA 13.2), laya 0.4.30, transformers 5.22.2; GPU: NVIDIA B200 MIG 3g.90gb; `pip_freeze.txt` ao lado.
 - **Sementes:** 0 (inicialização do SAE, ordem dos dados, bootstrap, probes fora da dobra). Revisões: `convaiinnovations/laya` `7b928d82…` (multilíngue) e `e333cb7c…` (par em inglês); dataset `c76749ec…`.
@@ -235,6 +330,7 @@ Variante `all`: Spearman 0,90 e 0,80, concordância de sinal 90% e 96%, razão 0
   qualidade 3619 (`enc_08`), 3621 (`enc_17`), 3623 (literal), 3629 (dom20), 3635 (base), 3643 (cópia); features 3618/3626/3631 (`enc_08`, 3631 = estrato por visão), 3620/3627/3632 (`enc_17`, 3632 = estrato por visão);
   Parte C: extração 3617 (curto) / 3625, tokens 3624 / 3633, SAE do base 3634, features base 3636, features fine-tuned 3637, comparação 3638, marcadores massivos 3640, cópia do SAE 3641, features da cópia 3644, comparação com cópia 3647, cartões das features que mais mudam 3656.
   Ablação causal: 3874 (`enc_08`) e 3875 (`enc_17`).
+  Rotação e semente 1 (emenda 6): treino 4171/4172, extração das rotações 4173, qualidade 4174/4176, features 4175/4177, análise das rotações 4179, ablação 4180/4181, pareamento 4182.
 - **RAM medida (pico, pedido):** corpus 1,8 GiB (3g); extração de tokens 8,0 GiB (8g, page cache do memmap); treino 6,0 GiB (8g); qualidade 2,8–4,0 GiB; features 2,7–4,4 GiB; Parte C: extração 9,1 GiB (10g), tokens 10,0 GiB (10g), SAE do base 7,8 GiB (10g).
 - **Artefatos** (relativos à raiz; os parquets de estatísticas e `attribution/` não vão para o git: ficam no cluster em `~/workspace/sae-decision-models/results/sae_features/` e no Mac):
   `sae_quality.csv` e `sae_quality_flags_*.json`; `<SAE>/feature_stats_<visão>_<critério>.parquet` (colunas `cmh_*` e `cmh_qp_*`), `feature_stats_prior_bias.parquet`, `feature_stats_attribution.parquet`, `prior_bias_summary.json`, `decision_views.parquet`;

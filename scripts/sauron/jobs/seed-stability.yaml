@@ -6,7 +6,7 @@ name: seed-stability
 image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
 gpus: 1
 vram: 89
-# Medido: partc-compare-copy (pareamento de 16.384 x 16.384 features) pico 2,9 GiB; aqui 12.288 features. 2,9 / 0,7 = 4,1 -> 4g.
+# Medido (job 4182): pico 1,1 GiB; 1,1 / 0,7 = 1,6 -> 2g seria o pedido certo (os 4g vieram do pico do partc-compare, com 16.384 features).
 memory: 4g
 cpus: 2
 max_time: 30m

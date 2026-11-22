@@ -224,13 +224,13 @@ def figures(beh: dict, eta: pd.DataFrame, out: Path):
         ax.spines[s].set_visible(False)
     fig.tight_layout(); fig.savefig(out / "eta_by_layer.png"); plt.close(fig)
     fig, axes = plt.subplots(1, 2, figsize=(7, 3.2), dpi=150, sharey=True)
-    for ax, key in zip(axes, ("choice_k4", "choice_k5")):
+    for ax, key in zip(axes, ("choice_k4", "score_k4")):
         if key not in beh["preference"]:
             continue
         s = beh["preference"][key]["slots"]; k = len(s)
         ax.bar(range(k), [s[str(j)]["p"] for j in range(k)], color=blue)
         ax.axhline(1 / k, color=ink, lw=1, ls="--")
-        ax.set_title(f"choice, {k} options", fontsize=9); ax.set_xlabel("slot the model picks (0 = first listed)")
+        ax.set_title(f"{key.split('_')[0]}, {k} options (test)", fontsize=9); ax.set_xlabel("slot the model picks (0 = first listed)")
         for sp in ("top", "right"):
             ax.spines[sp].set_visible(False)
     axes[0].set_ylabel("share of picks (dashed = uniform)")

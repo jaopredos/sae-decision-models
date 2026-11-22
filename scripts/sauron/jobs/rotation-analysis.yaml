@@ -6,7 +6,7 @@ name: rotation-analysis
 image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
 gpus: 1
 vram: 89
-# 1ª ESTIMATIVA (nenhuma medida ainda): carrega uma camada por vez (~110 MB no treino) mais os vetores do probe (6.000 x 5 x 768 float32 no treino da etapa 3, ~90 MB) e os do teste rotacionado.
+# Medido (job 4179): pico 3,2 GiB; 3,2 / 0,7 = 4,6 -> 5g seria o pedido certo (os 8g usados foram a 1ª estimativa).
 memory: 8g
 cpus: 4
 max_time: 1h

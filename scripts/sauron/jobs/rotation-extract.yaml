@@ -6,7 +6,7 @@ name: rotation-extract
 image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
 gpus: 1
 vram: 89
-# 1ª ESTIMATIVA (nenhuma medida ainda): ~72 mil marcadores x 26 camadas x 768 x 2 B ~ 2,9 GB só no treino, mais cópias na gravação. A extração da etapa 3 (mesma estrutura, 3,4x menos linhas) teve pico de 4,7 GiB.
+# Medido (job 4173): pico 12,0 GiB de 12g, no teto (o RAM do cgroup conta page cache e as listas de vetores ficam na memória até a gravação). Terminou, mas sem folga: para repetir, peça 16g.
 memory: 12g
 cpus: 4
 max_time: 1h
