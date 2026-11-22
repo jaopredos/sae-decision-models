@@ -66,13 +66,18 @@ def behaviour(rows: pd.DataFrame) -> dict:
         out["preference"][f"{qt}_k{k}"] = {"n_decisions": len(ids), "slots": res}
         out["consistency"][f"{qt}_k{k}"] = {"choice_changes_with_rotation": float((nopt[ids] > 1).mean()), "same_option_always (content)": float((nopt[ids] == 1).mean()),
                                             "same_slot_always (position)": float((nslot[ids] == 1).mean())}
-    rows = rows.assign(ok=(rows.pred_idx == rows.gold_idx).astype(float))
-    for qt, g in rows.groupby("qtype"):
-        by_rot = g.groupby("rot")["ok"].mean().round(4).to_dict()
-        by_gold = g.groupby("gold_slot")["ok"].mean().round(4).to_dict()
-        m, ci = case_boot(g["case_id"].to_numpy(), g["ok"].to_numpy(), np.ones(len(g)))
-        m0, ci0 = case_boot(g[g.rot == 0]["case_id"].to_numpy(), g[g.rot == 0]["ok"].to_numpy(), np.ones((g.rot == 0).sum()))
-        out["accuracy"][qt] = {"mean_over_rotations": m, "ci": ci, "rot0": m0, "rot0_ci": ci0, "by_rotation": by_rot, "by_gold_slot": by_gold}
+    rows = rows.assign(ok=(rows.pred_idx == rows.gold_idx).astype(float), dec=dec_id, chance=1.0 / rows["k"])
+    # decision-weighted: each decision counts once whatever its number of rotations (row-weighting favours questions with more options)
+    per_dec = rows.groupby("dec").agg(case_id=("case_id", "first"), qtype=("qtype", "first"), ok_mean=("ok", "mean"), chance=("chance", "mean"))
+    r0 = rows[rows.rot == 0].set_index("dec")["ok"]
+    per_dec["ok_rot0"] = r0.reindex(per_dec.index).to_numpy()
+    for qt, g in list(per_dec.groupby("qtype")) + [("all", per_dec)]:
+        m, ci = case_boot(g["case_id"].to_numpy(), g["ok_mean"].to_numpy(), np.ones(len(g)))
+        m0, ci0 = case_boot(g["case_id"].to_numpy(), g["ok_rot0"].to_numpy(), np.ones(len(g)))
+        gr = rows[rows.dec.isin(g.index)] if qt != "all" else rows
+        out["accuracy"][qt] = {"n_decisions": len(g), "mean_over_rotations": m, "ci": ci, "rot0": m0, "rot0_ci": ci0, "random_expected": float(g["chance"].mean()),
+                               "by_rotation_row_weighted": gr.groupby("rot")["ok"].mean().round(4).to_dict(),
+                               "by_gold_slot_row_weighted": gr.groupby("gold_slot")["ok"].mean().round(4).to_dict()}
     return out
 
 
