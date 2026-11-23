@@ -1,0 +1,83 @@
+[
+  {
+    "contrast": "all_minus_markers",
+    "layer": "enc_17",
+    "estimate": 0.6969997104301919,
+    "ci": [
+      0.6618262303206286,
+      0.7242572951702017
+    ]
+  },
+  {
+    "contrast": "all_minus_markers",
+    "layer": "enc_18",
+    "estimate": 0.3090131263326945,
+    "ci": [
+      0.28381700179682756,
+      0.3352152518423391
+    ]
+  },
+  {
+    "contrast": "all_minus_markers",
+    "layer": "enc_final",
+    "estimate": 0.0022182361606951245,
+    "ci": [
+      -0.002619459667211739,
+      0.00939103050168524
+    ]
+  },
+  {
+    "contrast": "all_minus_nonmarkers",
+    "layer": "enc_17",
+    "estimate": 0.27431148518694715,
+    "ci": [
+      0.2495573321009598,
+      0.2998830147716295
+    ]
+  },
+  {
+    "contrast": "all_minus_nonmarkers",
+    "layer": "enc_18",
+    "estimate": 0.6715727492110225,
+    "ci": [
+      0.6428100808318888,
+      0.6959785578970561
+    ]
+  },
+  {
+    "contrast": "all_minus_nonmarkers",
+    "layer": "enc_final",
+    "estimate": 0.9977817763117437,
+    "ci": [
+      0.9906089161758859,
+      1.0026194969621822
+    ]
+  },
+  {
+    "contrast": "enc18_minus_enc17_markers",
+    "layer": "paired",
+    "estimate": 0.393299161741372,
+    "ci": [
+      0.3522177560658051,
+      0.4321696946639995
+    ]
+  },
+  {
+    "contrast": "enc18_minus_enc17_nonmarkers",
+    "layer": "paired",
+    "estimate": -0.39194868638020075,
+    "ci": [
+      -0.4292584907688653,
+      -0.350728305813252
+    ]
+  },
+  {
+    "contrast": "enc18_minus_enc17_all_tokens",
+    "layer": "paired",
+    "estimate": 0.005312577643874494,
+    "ci": [
+      0.0009319158441062969,
+      0.009928778879717352
+    ]
+  }
+]

@@ -1,0 +1,14 @@
+#!/bin/bash
+set -euo pipefail
+export PYTHONUNBUFFERED=1
+export TOKENIZERS_PARALLELISM=false
+export LAYA_CUDA_AMP=fp32
+export PIP_FREEZE_OUT=results/position_mechanism/path_v1/environment/pip_freeze.txt
+source scripts/sauron/uv_env.sh
+uv run --frozen python -m unittest discover -s tests -p 'test_position*.py' -v
+timeout 10m uv run --frozen python run_position_path.py \
+    --limit 2 --n-null 1 --out results/position_mechanism/path_pilot_v1
+test -s results/position_mechanism/path_pilot_v1/COMPLETE.json
+echo '[path] PILOT PASSED: alignment, self/reset controls and factorial replication'
+uv run --frozen python run_position_path.py \
+    --limit 64 --n-null 4 --out results/position_mechanism/path_v1

@@ -1,0 +1,12 @@
+{
+  "cases": 64,
+  "decisions": 94,
+  "patch_forward_rows": 6768,
+  "derived_interactions": 564,
+  "manifest_sha256": "e309f296946bd22593269e24923614e3695cad9dd62affeacb5b03bd6ed25a28",
+  "max_logit_errors": {
+    "self_patch": 0.0,
+    "final_all_tokens": 9.5367431640625e-07,
+    "marker_replication": 6.866455078125e-05
+  }
+}
