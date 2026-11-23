@@ -1,0 +1,15 @@
+{
+  "cases": 400,
+  "decisions": 600,
+  "forward_rows": 13200,
+  "manifest_sha256": "984fafc0e0bbd7acaa2cbbf3e1ff7d25b2c1ebac3677ac2f36003d821e58ffac",
+  "max_logit_errors": {
+    "self_patch": 0.0,
+    "reset_all18": 0.0,
+    "final_alignment": 1.9073486328125e-06
+  },
+  "frozen_protocol_sha256": "d250aee992736e85245b1e5c6cf5c35c80e6612bb70c11c33d4187de6407ad88",
+  "max_case_contrast_share": 0.039193483683309514,
+  "flipped_decisions": 138,
+  "flipped_directional_pairs": 276
+}

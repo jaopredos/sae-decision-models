@@ -90,11 +90,25 @@ def main():
         flips=part[part.pair_flip==1]
         summary.append({"condition":name,"projection":float(part.projection_numerator.sum()/part.contrast_sqnorm.sum()),
                         "ci":projection_interval(part,args.bootstrap),"median_ratio":float(part.transfer_ratio.median()),
+                        "ratio_q05":float(part.transfer_ratio.quantile(.05)),"ratio_q95":float(part.transfer_ratio.quantile(.95)),
+                        "undefined_ratios":int(part.transfer_ratio.isna().sum()),
                         "change_norm":float(part.change_norm.mean()),"orthogonal_norm":float(part.orthogonal_norm.mean()),
                         "donor_choice_on_flips":float(flips.donor_choice_recovered.mean()) if len(flips) else None})
     pairs=[("to_markers18","noise_to_markers18"),("to_markers18","to_markers18_clamp_mlp"),
            ("to_markers18","to_markers18_clamp_attention"),("nonmarkers17","to_markers18")]
     contrasts=[paired_contrast(frame,*pair,args.bootstrap) for pair in pairs]
+    primary=contrasts[0]
+    weights=frame[frame.condition=="to_markers18"].groupby("case_id").contrast_sqnorm.sum()
+    target=frame[frame.condition=="to_markers18"]
+    audit.update({"max_case_contrast_share":float(weights.max()/weights.sum()),
+                  "flipped_decisions":int(target[target.pair_flip==1][["case_id","qid"]].drop_duplicates().shape[0]),
+                  "flipped_directional_pairs":int((target.pair_flip==1).sum())})
+    if audit["frozen_protocol_sha256"] is not None:
+        decision={"primary_contrast":"to_markers18 minus mean norm-matched noise",**primary,
+                  "criterion":"estimate > 0 and lower bound of paired case-bootstrap IC95 > 0",
+                  "confirmed":bool(primary["estimate"]>0 and primary["ci"][0]>0),
+                  "cases":audit["cases"],"decisions":audit["decisions"],"protocol_sha256":audit["frozen_protocol_sha256"]}
+        (args.out/"confirmation.json").write_text(json.dumps(decision,indent=2),encoding="utf-8")
     for name,value in (("audit",audit),("summary",summary),("contrasts",contrasts)):
         (args.out/f"{name}.json").write_text(json.dumps(value,indent=2,allow_nan=False),encoding="utf-8")
     pd.DataFrame(summary).to_csv(args.out/"summary.csv",index=False)

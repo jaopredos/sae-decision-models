@@ -1,0 +1,15 @@
+{
+  "primary_contrast": "to_markers18 minus mean norm-matched noise",
+  "left": "to_markers18",
+  "right": "noise_to_markers18",
+  "estimate": 0.3754025540090837,
+  "ci": [
+    0.36290502283002846,
+    0.386666394804836
+  ],
+  "criterion": "estimate > 0 and lower bound of paired case-bootstrap IC95 > 0",
+  "confirmed": true,
+  "cases": 400,
+  "decisions": 600,
+  "protocol_sha256": "d250aee992736e85245b1e5c6cf5c35c80e6612bb70c11c33d4187de6407ad88"
+}
