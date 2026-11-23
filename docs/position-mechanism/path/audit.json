@@ -1,0 +1,11 @@
+{
+  "cases": 64,
+  "decisions": 94,
+  "forward_rows": 2068,
+  "manifest_sha256": "947302ab058ad968b64cc315e4ac5094a21b155b5f818789b300a1d6857902bc",
+  "max_logit_errors": {
+    "self_patch": 0.0,
+    "reset_all18": 0.0,
+    "factorial_reference": 0.0
+  }
+}

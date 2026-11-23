@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 import time
 from run_position import Runner, atomic_json
-from run_position_factorial import full_snapshot
+from run_position_factorial import full_snapshot, full_patch
 from src.position import choose_cases, conditions, effect_metrics, stable_seed
 
 
@@ -36,7 +36,7 @@ def patch_hook(positions,values,selected):
     return edit
 
 
-def collect_path(runner,case,qid,n_null):
+def collect_path(runner,case,qid,n_null,validate_final=False):
     torch=runner.torch
     q=next(conditions(case["questions"][qid],case["state"],case["state"],case["case_id"],qid))[1]
     k=len(q["criteria"])
@@ -46,8 +46,13 @@ def collect_path(runner,case,qid,n_null):
         runner.parity(case["state"],qid,q,a)
         if a["alignment"]["tokens"]!=b["alignment"]["tokens"] or a["alignment"]["groups"]!=b["alignment"]["groups"]:
             raise ValueError("path semantic alignment differs")
-        records=[]
+        records=[];final_errors=[]
         for donor,recipient in ((a,b),(b,a)):
+            if validate_final:
+                control=full_patch(runner,case,qid,q,recipient,"enc_final",donor["states"]["enc_final"])
+                error=max(abs(x-y) for x,y in zip(control["logits"],donor["logits"]))
+                if error>1e-4:raise ValueError("confirmation full-token alignment control failed")
+                final_errors.append(error)
             positions=recipient["alignment"]["indices"]
             groups=recipient["alignment"]["groups"]
             clean=recipient["states"]["enc_17"]
@@ -86,7 +91,8 @@ def collect_path(runner,case,qid,n_null):
                                 "donor_logits":donor["logits"],"recipient_logits":recipient["logits"],
                                 "patched_logits":result["logits"],"patched_probabilities":result["probabilities"],
                                 **effect_metrics(donor["logits"],recipient["logits"],result["logits"])})
-        return {"case_id":case["case_id"],"qid":qid,"workflow":case["workflow"],"patches":records}
+        return {"case_id":case["case_id"],"qid":qid,"workflow":case["workflow"],"patches":records,
+                "final_alignment_control_max_error":max(final_errors) if final_errors else None}
 
 
 def main():

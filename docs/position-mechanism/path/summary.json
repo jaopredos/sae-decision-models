@@ -1,0 +1,98 @@
+[
+  {
+    "condition": "noise_to_markers18",
+    "projection": 0.015097120941341323,
+    "ci": [
+      0.004970274339354875,
+      0.024806735703019337
+    ],
+    "median_ratio": 0.005434058876925626,
+    "change_norm": 0.1303535463114201,
+    "orthogonal_norm": 0.09370003291700481,
+    "donor_choice_on_flips": 0.05
+  },
+  {
+    "condition": "nonmarkers17",
+    "projection": 0.6942303319541298,
+    "ci": [
+      0.6613081747962357,
+      0.72198510056548
+    ],
+    "median_ratio": 0.6769224371546204,
+    "change_norm": 0.8943611609512403,
+    "orthogonal_norm": 0.17173468766682523,
+    "donor_choice_on_flips": 0.65
+  },
+  {
+    "condition": "reset_all18",
+    "projection": 0.0,
+    "ci": [
+      0.0,
+      0.0
+    ],
+    "median_ratio": 0.0,
+    "change_norm": 0.0,
+    "orthogonal_norm": 0.0,
+    "donor_choice_on_flips": 0.0
+  },
+  {
+    "condition": "self_patch",
+    "projection": 0.0,
+    "ci": [
+      0.0,
+      0.0
+    ],
+    "median_ratio": 0.0,
+    "change_norm": 0.0,
+    "orthogonal_norm": 0.0,
+    "donor_choice_on_flips": 0.0
+  },
+  {
+    "condition": "to_markers18",
+    "projection": 0.378232566416547,
+    "ci": [
+      0.33787799518347067,
+      0.42179037370029976
+    ],
+    "median_ratio": 0.37081556319126474,
+    "change_norm": 0.5019751019105666,
+    "orthogonal_norm": 0.132426231008539,
+    "donor_choice_on_flips": 0.375
+  },
+  {
+    "condition": "to_markers18_clamp_attention",
+    "projection": 0.0,
+    "ci": [
+      0.0,
+      0.0
+    ],
+    "median_ratio": 0.0,
+    "change_norm": 0.0,
+    "orthogonal_norm": 0.0,
+    "donor_choice_on_flips": 0.0
+  },
+  {
+    "condition": "to_markers18_clamp_mlp",
+    "projection": 0.2552651717604314,
+    "ci": [
+      0.2268003578838428,
+      0.2807235873062209
+    ],
+    "median_ratio": 0.2614109889359223,
+    "change_norm": 0.35530298716751024,
+    "orthogonal_norm": 0.10433920490743287,
+    "donor_choice_on_flips": 0.2
+  },
+  {
+    "condition": "to_nonmarkers18",
+    "projection": 0.3014497027153589,
+    "ci": [
+      0.27575862945689944,
+      0.3309778070478643
+    ],
+    "median_ratio": 0.28743037742899286,
+    "change_norm": 0.42688317502253864,
+    "orthogonal_norm": 0.14521571317035897,
+    "donor_choice_on_flips": 0.3
+  }
+]

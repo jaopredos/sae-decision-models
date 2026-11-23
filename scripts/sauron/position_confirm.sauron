@@ -1,0 +1,19 @@
+#!/bin/bash
+set -euo pipefail
+export PYTHONUNBUFFERED=1
+export TOKENIZERS_PARALLELISM=false
+export LAYA_CUDA_AMP=fp32
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export OPENBLAS_NUM_THREADS=1
+export PIP_FREEZE_OUT=results/position_mechanism/path_confirm_v1/environment/pip_freeze.txt
+source scripts/sauron/uv_env.sh
+uv run --frozen python -m unittest discover -s tests -p 'test_position*.py' -v
+timeout 15m uv run --frozen python run_position_confirm.py \
+    --subset discovery --limit 2 --n-null 1 --protocol docs/position-mechanism/CONFIRM_PROTOCOL.md \
+    --out results/position_mechanism/path_confirm_pilot_v1
+test -s results/position_mechanism/path_confirm_pilot_v1/COMPLETE.json
+echo '[confirm] DISCOVERY PILOT PASSED; starting frozen test collection'
+uv run --frozen python run_position_confirm.py \
+    --subset test --n-null 4 --protocol docs/position-mechanism/CONFIRM_PROTOCOL.md \
+    --out results/position_mechanism/path_confirm_v1

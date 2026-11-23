@@ -34,8 +34,9 @@ class PathTests(unittest.TestCase):
         case={"case_id":"toy","state":"case","workflow":"toy",
               "questions":{"q":{"type":"choice","instructions":"pick","criteria":{"a":"red","b":"blue"}}}}
         with patch("src.activations.layer_modules",return_value=modules),patch("src.activations._options_over_cap",return_value=0):
-            data=collect_path(Runner(agent),case,"q",n_null=1)
+            data=collect_path(Runner(agent),case,"q",n_null=1,validate_final=True)
         self.assertEqual(len(data["patches"]),16)
+        self.assertLess(data["final_alignment_control_max_error"],1e-4)
         for row in data["patches"]:
             if row["condition"] in ("self_patch","reset_all18","to_markers18_clamp_attention"):
                 self.assertLess(max(abs(a-b) for a,b in zip(row["patched_logits"],row["recipient_logits"])),1e-5)

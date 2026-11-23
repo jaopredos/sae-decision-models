@@ -1,0 +1,38 @@
+[
+  {
+    "left": "to_markers18",
+    "right": "noise_to_markers18",
+    "estimate": 0.36313544547520576,
+    "ci": [
+      0.3310932948069775,
+      0.39793873095886945
+    ]
+  },
+  {
+    "left": "to_markers18",
+    "right": "to_markers18_clamp_mlp",
+    "estimate": 0.12296739465611563,
+    "ci": [
+      0.10163592696152346,
+      0.1468528495702755
+    ]
+  },
+  {
+    "left": "to_markers18",
+    "right": "to_markers18_clamp_attention",
+    "estimate": 0.378232566416547,
+    "ci": [
+      0.33787799518347067,
+      0.42179037370029976
+    ]
+  },
+  {
+    "left": "nonmarkers17",
+    "right": "to_markers18",
+    "estimate": 0.3159977655375827,
+    "ci": [
+      0.2836632537639786,
+      0.348988037945866
+    ]
+  }
+]
