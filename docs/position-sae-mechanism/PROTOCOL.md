@@ -107,3 +107,8 @@ O CLI instalado em 2026-11-25 rejeita submit -c antes de criar o job.
 Sua ajuda documenta submit -f com command: ou script:. Este piloto usa
 command: bash scripts/sauron/position_sae_pilot.sauron, validado por --dry-run.
 Nenhuma mudança do desenho científico ou observação de resultados ocorreu.
+
+O job 4504 falhou no parser Bash antes dos testes/inferência: git archive no
+Windows exportou CRLF por core.autocrlf=true. Correção de empacotamento:
+git -c core.autocrlf=false archive, atributo LF no script e validação Bash
+antes de submeter novamente. Nenhum resultado científico foi observado.
