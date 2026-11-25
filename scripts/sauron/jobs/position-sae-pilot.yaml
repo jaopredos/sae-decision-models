@@ -6,3 +6,4 @@ memory: 8g
 cpus: 2
 max_time: 15m
 workspace: sae-position-sae-mechanism-v1
+command: bash scripts/sauron/position_sae_pilot.sauron

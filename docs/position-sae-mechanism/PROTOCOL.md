@@ -101,3 +101,9 @@ outro job é alterado. Checkpoints JSON atômicos por decisão/camada, manifesto
 arquivos/pesos/referência e hashes finais de decisões; recusar retomada incompatível.
 Piloto: GPU mínima 20 GB (classe disponível 89), 8 GB RAM, 2 CPUs, 15 min. Reavaliar
 recursos e tempo observado antes da coleta completa. Backups externos com SHA256.
+### Adendo operacional antes do primeiro job
+
+O CLI instalado em 2026-11-25 rejeita submit -c antes de criar o job.
+Sua ajuda documenta submit -f com command: ou script:. Este piloto usa
+command: bash scripts/sauron/position_sae_pilot.sauron, validado por --dry-run.
+Nenhuma mudança do desenho científico ou observação de resultados ocorreu.
