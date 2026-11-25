@@ -21,4 +21,15 @@ class EstimateTests(unittest.TestCase):
         self.assertIsNone(result['projection']);self.assertIsNone(result['ci'])
         self.assertEqual(result['undefined'],1)
 
+class PairedDifferenceTests(unittest.TestCase):
+    def test_noise_is_averaged_within_direction_before_contrast(self):
+        from analyze_position_sae_diagnostics import paired_difference
+        ref=dict(donor_logits=[2.,0.],recipient_logits=[0.,0.])
+        rows=[dict(**ref,condition='full',patched_logits=[2.,0.]),
+              dict(**ref,condition='reconstructed',patched_logits=[1.6,0.]),
+              dict(**ref,condition='noise_reconstructed_0',patched_logits=[0.2,0.]),
+              dict(**ref,condition='noise_reconstructed_1',patched_logits=[0.6,0.])]
+        result=paired_difference(rows,'reconstructed','noise_mean')
+        self.assertAlmostEqual(result['transfer_ratio'],0.6)
+
 if __name__=='__main__':unittest.main()

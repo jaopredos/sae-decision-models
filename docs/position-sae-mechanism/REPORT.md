@@ -1,81 +1,124 @@
-# Piloto SAE de contraste de ordem — job 4505
+# SAE e transmissão da sensibilidade à ordem no Laya
 
-## Estado
+## Resultado atual e decisão
 
-Piloto concluído; auditoria completa de descoberta ainda pendente. Nenhuma feature
-foi selecionada causalmente e nenhum SAE novo foi treinado. Código de inferência:
-728eeed, baseado em 2317b25. Modelo/dados nas revisões fixadas do protocolo.
+A auditoria de descoberta **A está concluída**: 64 casos, 94 decisões choice, dois
+SAEs e duas direções. O SAE principal enc17 preserva o contraste funcional segundo
+os critérios congelados e transmite sinal pelo caminho demais17 → marcadores18,
+com residual receptor preservado. O efeito é menor que o transplante das ativações
+elegíveis. O SAE enc08 falha no diagnóstico de contraste dos demais tokens.
+Não treinamos outro SAE. B/C está protocolado; ainda não há resultado causal de
+features selecionadas nem confirmação no desenvolvimento nesta extensão.
 
-Dois casos, duas decisões choice, duas camadas, ambas as direções, um ruído por
-condição. Passaram 20 testes de posição, 16 SAE e todos os gates técnicos de
-inferência. O maior erro de controle foi 1,12e-5 (reprodução/recombinação, tolerância
-1e-4); self e restauração total foram zero. A análise offline verificou hashes,
-cobertura completa de condições e recálculo das métricas dos logits.
+## Comparação com as intervenções sem SAE
 
-## Observações de fidelidade, sem conclusão populacional
+Todos os valores abaixo usam o mesmo contraste limpo centrado entre ordens.
+São projeções de mudanças de logits, não porcentagens de viés ou mediação.
 
-Substituir a reconstrução nas duas ordens, mantendo o mesmo domínio elegível:
-
-| Camada e grupo | Projeção do contraste reconstruído | Erro L2 relativo |
+| Intervenção no caminho demais17 → marcadores18 | Projeção | IC95% por caso |
 |---|---:|---:|
-| enc_17 demais tokens | 0,643 | 0,578 |
-| enc_17 marcadores | 0,948 | 0,174 |
-| enc_08 demais tokens | 0,856 | 0,600 |
-| enc_08 marcadores | 1,138 | 0,233 |
+| Ativações originais completas | 0,3782 | 0,3379–0,4218 |
+| Ativações originais, domínio elegível E | 0,3773 | 0,3366–0,4224 |
+| Delta reconstruído SAE, preservando residual receptor | 0,3205 | 0,2784–0,3555 |
+| Delta do residual de reconstrução | 0,0574 | 0,0362–0,0761 |
+| Tokens fora do domínio O | 0,0004 | −0,0008–0,0014 |
+| Delta reconstruído menos média de 4 ruídos pareados | **0,3062** | **0,2699–0,3366** |
+| Delta reconstruído menos ativações elegíveis | **−0,0568** | **−0,0774–−0,0347** |
 
-Os demais tokens sinalizam falha dos limiares convencionais pré-registrados.
-Fidelidade da resposta individual não basta para preservar o contraste de ordem.
-Com dois casos, isso é alerta de piloto; os intervalos em arquivos não devem ser
-interpretados como estabilidade populacional ou confirmação.
+O caminho de referência foi reproduzido (maior erro 4,77e-6 logit); a transferência
+direta dos demais tokens também (5,72e-6). A diferença reconstruído–elegível mostra
+uma lacuna funcional desta configuração, sem invalidar o efeito que o SAE transmite.
+A soma de efeitos no logit não é imposta pela identidade de decomposição das ativações;
+interações e efeitos ortogonais estão nos arquivos de diagnóstico.
 
-No caminho demais17 → marcadores18, as projeções foram: transplante completo
-0,296; elegíveis 0,293; delta reconstruído 0,241; residual 0,060; fora do domínio
-0,003; ruído pareado ao delta reconstruído 0,037. Não são porcentagens de viés
-explicado. A soma de efeitos nos logits não é exigida pela decomposição de ativações.
-O ruído está pareado ao delta reconstruído, não ao transplante completo; comparar
-com controles anteriores exige respeitar essa diferença de norma e denominadores.
+![Intervenções no caminho](discovery/path.png)
 
-![Projeções no piloto](pilot/path.png)
+## Fidelidade funcional e geométrica são diferentes
 
-## Decisão operacional
+Substituição bilateral pela reconstrução, sempre no mesmo domínio E alinhado:
 
-Executar A nos mesmos 64 casos/94 decisões de descoberta, sem seleção de erro/flip,
-quatro ruídos por condição, incluindo as duas camadas. A coleta quantificará a
-fidelidade e o papel do residual antes de qualquer atribuição a features. As
-estatísticas de Δz serão apenas candidatas exploratórias. Falha de fidelidade
-persistente exige avaliar configuração/suporte antes de seleção causal; não autoriza
-concluir que SAEs em geral falham nem treinar automaticamente enc_18.
+| Camada/grupo substituído | Projeção do contraste | Erro L2 relativo do contraste | Gate |
+|---|---:|---:|---|
+| enc17 demais tokens | 0,8951 [0,8302;0,9498] | 0,2462 | passa |
+| enc17 marcadores | 0,9630 [0,9379;0,9865] | 0,1232 | passa |
+| enc08 demais tokens | 0,6725 [0,5521;0,8011] | 0,7083 | falha |
+| enc08 marcadores | 0,9993 [0,9604;1,0386] | 0,0967 | passa |
 
-O protocolo B/C e o cruzamento de fatores posicionais ainda precisam ser fechados
-após A; desenvolvimento e teste não foram acessados nesta extensão. O teste existente
-não é intocado. Não há ainda relatório comparativo final ou conclusão SAE confirmada.
+Os gates convencionais registrados foram desvio da projeção >0,20 ou erro relativo
+>0,50. O alerta enc17 do piloto não se sustentou na população de 64 casos pelos
+mesmos critérios; não ajustamos os limiares. O alerta enc08 persistiu.
 
-## Recursos, preservação e incidentes
+Para o próprio delta das ativações elegíveis dos demais tokens enc17, o erro L2
+relativo é 0,7049, projeção geométrica 0,7016 e cosseno 0,7395. Assim, preservar boa
+parte do contraste funcional não significa decompor fielmente toda a mudança interna.
+FVE pooled dos tokens elegíveis: enc17 demais 0,8848, marcadores 0,6669; enc08 demais
+0,9483, marcadores 0,5761. São entradas reordenadas FP32 e população diferente da
+auditoria bf16 original dos SAEs; os números históricos não são comparação direta.
 
-Job: cerca de 23 s incluindo testes/carregamento. GPU pico alocado 1,44 GiB,
-reservado 1,53 GiB; RSS máximo do processo 2,98 GiB. Manter 8 GB RAM, 2 CPUs,
-1 thread CPU/interop e pedir 8 GB mínimos de VRAM (classe disponível 89 GB), com
-15 min de limite para a auditoria. O limite tem margem sobre a extrapolação do piloto.
+## Domínio, efeitos colaterais e estabilidade
 
-Workspace isolado `~/workspace/sae-position-sae-mechanism-v1`; ambiente da investigação
-anterior reutilizado por caminho absoluto, sem uv sync ou reinstalação. Caches preservados.
-Os resultados antigos são lidos por caminho e não alterados. Ativações existentes da
-coleta guardam marcadores; esta decomposição requer também os demais tokens FP32,
-portanto recaptura somente os pares necessários e usa path_v1 como referência numérica.
+São 1394/29367 demais tokens fora do domínio nas duas ordens de enc17 (4,75%). Eles
+concentram 99,80% da energia do delta bruto, mas seu efeito isolado no caminho é
+pequeno. Norma ou FVE literal dominada por esses tokens não mede relevância causal
+para a ordem. Nenhum marcador ficou fora do domínio. Enc08 não teve exclusões.
 
-Backup local e remoto: `pilot-4505.tar.gz`, SHA256
-`3804fed8f8656526236ee260569c73acdd72052cd5299d32d3a2c3d3cad6f764`.
-Manifesto: `a206d3fa6c58d3d4af1d469ad1dd711fc4fda5de8ac0e628426e3f91da66035b`.
-Detalhes auditados em [pilot/audit.json](pilot/audit.json), tabelas CSV e summary.json.
+No caminho reconstruído, a acurácia média das apresentações permaneceu 0,2340;
+a entropia normalizada aumentou 0,0045, a margem top2 caiu 0,0475 e KL média foi
+0,0172 nat. Esses valores descrevem o transplante entre ordens, não uma mitigação
+validada de viés. Não há evidência de sucesso por uniformização.
 
-Primeira tentativa de submissão -c foi rejeitada pelo CLI novo sem criar job.
-4504 falhou antes dos testes/inferência por CRLF no Bash; corrigido empacotamento LF.
-4505 passou. Nenhuma dessas falhas é resultado científico negativo.
+Customer_service concentra 77,2% do denominador, e o maior caso 12,35%. A projeção
+reconstruída é positiva nos quatro workflows; análises por direção, retirada de
+workflow e retirada do maior caso estão em discovery/sensitivity.csv. Perguntas,
+direções e controles permanecem juntos nas 2000 reamostras por caso, seed0. Não houve
+razões indefinidas por denominador <=1e-8. Normas, efeitos ortogonais, quantis,
+recuperação de escolha em casos com/sem flip e cobertura constam nas tabelas.
 
-## Branches e PR
+## O que isso demonstra — e o que falta
 
-A branch `experiment/position-sae-mechanism` deriva de `experiment/position-mechanism`.
-O PR incremental deve ter esta última como base; ela contém alinhamento, controles,
-intervenções e evidências causais reutilizadas. A branch `experiment/sae-features`
-é a origem histórica dos SAEs, já incorporada na base; não é o destino recomendado
-para esta continuação. Merge e force-push não foram realizados.
+Demonstrado nesta descoberta: a representação reconstruída pelo enc17 k32, editada
+como delta com residual receptor preservado, transmite parte do contraste pelo
+caminho já localizado, acima de ruído de mesma norma. O residual tem contribuição
+adicional. O checkpoint/camada/configuração enc08 não preserva o contraste dos
+demais tokens nos limiares definidos. Isso não é uma falha geral de SAEs.
+
+Ainda não demonstrado: quais features isolam esse sinal, sua seletividade à posição,
+robustez entre sementes/k, origem inicial da sensibilidade ou generalização fora
+deste Laya. Resta cruzar conteúdo, IDs, ordinal, posição absoluta e vizinhança.
+Não há motivo para treinar automaticamente um SAE enc18; primeiro explorar os
+pesos existentes se os próximos testes indicarem necessidade.
+
+## Próxima etapa B/C
+
+[FEATURE_PROTOCOL.md](FEATURE_PROTOCOL.md) congela 32 features por mudança absoluta
+por token, com peso igual por caso, suporte em 20 casos e quatro folds por caso.
+Cada lista é avaliada nos casos que ficaram fora de sua seleção. Oito controles
+pareados por cardinalidade/frequência/magnitude são congelados por fold. Houve
+3 fallbacks em 1280 pareamentos (inclui a lista completa para futuro dev); a dose
+efetiva e o balanceamento serão reportados. Concordância alta entre rankings de
+folds não basta para identificar features causais ou conceitos de posição.
+
+C testará selected-only e drop-selected, correspondentes aleatórios, self, reset,
+ruído e referências. Gradientes predirão o contraste limpo de ordem, sem gabarito;
+não serão usados para selecionar features. Nenhum dev/teste será acessado nessa
+rodada. O teste anterior já foi usado; confirmação genuinamente nova exige conjunto
+adicional definido antes dos resultados.
+
+## Integridade e reprodutibilidade
+
+Job4507 concluiu em cerca de 3min48s; pico GPU alocado 1,48GiB e RSS do processo
+2,97GiB. Ambiente bloqueado reutilizado, caches preservados, 1 thread CPU/interop,
+FP32, AMP/TF32/MHA fastpath off. Código de coleta e protocolo iguais ao piloto;
+manifestos e hashes por decisão verificados. Self/reset foram zero; maior erro de
+recombinação 2,67e-5, abaixo de 1e-4. Cobertura: 188 decisões-camada, 14664 execuções
+de condições, sem duplicatas; referências, probabilidades e contrastes recalculados.
+
+Backup externo e remoto: discovery-audit-4507.tar.gz, SHA256
+`4265a098dd4f6c946b3e9653e3467e22fa0b7416bfb799962f11d2b673182989`.
+Manifesto `c2ea1a194a686332c8e9ddd81171f08649f2b20d795156358f9244606d07f6e0`.
+Análise: analyze_position_sae.py e analyze_position_sae_diagnostics.py.
+O [relatório do piloto](PILOT_REPORT.md) preserva os incidentes operacionais.
+
+Branch própria: experiment/position-sae-mechanism, derivada de experiment/position-mechanism.
+PR incremental recomendado para esta última; o trabalho SAE original veio de
+experiment/sae-features e já está na base. Sem merge ou force-push.

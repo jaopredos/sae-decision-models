@@ -41,6 +41,28 @@ def load(root):
                     if r[k] is not None:raise ValueError('undefined metric differs')
                 elif not np.isclose(v,r[k],atol=1e-9,rtol=1e-8):raise ValueError('metric differs')
         if found!=grid:raise ValueError('condition coverage differs')
+        reconstruction_groups=set()
+        for r in d['reconstruction_contrasts']:
+            if r['group'] in reconstruction_groups:raise ValueError('duplicate reconstruction group')
+            reconstruction_groups.add(r['group'])
+            clean=np.subtract(*r['original_logits']);rec=np.subtract(*r['reconstructed_logits'])
+            if not np.allclose(clean,r['clean_contrast'],atol=1e-9) or not np.allclose(rec,r['reconstructed_contrast'],atol=1e-9):
+                raise ValueError('reconstruction contrast differs from saved logits')
+            metrics=effect_metrics(clean,[0.]*len(clean),rec)
+            for k,v in metrics.items():
+                if v is None and r[k] is not None:raise ValueError('undefined reconstruction metric differs')
+                if v is not None and not np.isclose(v,r[k],atol=1e-9,rtol=1e-8):raise ValueError('reconstruction metric differs')
+        if reconstruction_groups!={'markers','nonmarkers','all_tokens'}:raise ValueError('reconstruction coverage differs')
+        clean_by_order={}
+        for r in d['patches']:
+            for role in ('donor','recipient','patched'):
+                probs=np.asarray(r[f'{role}_probabilities'])
+                if len(probs)!=len(d['option_ids']) or not np.isfinite(probs).all() or (probs<0).any() or abs(probs.sum()-1)>.001:
+                    raise ValueError('invalid saved probabilities')
+                if role!='patched':
+                    key=tuple(r[f'{role}_order']);value=r[f'{role}_logits']
+                    if key in clean_by_order and value!=clean_by_order[key]:raise ValueError('clean logits vary across conditions')
+                    clean_by_order[key]=value
         payloads.append(d)
     if seen!=expected or complete['layer_decisions']!=len(seen):raise ValueError('decision coverage differs')
     return manifest,payloads
@@ -75,7 +97,11 @@ def analyze(root,out,n_boot):
             patches.append(dict(**base,**r))
             initial=probability_stats(r['recipient_logits'],r['recipient_probabilities'],gold)
             edited=probability_stats(r['patched_logits'],r['patched_probabilities'],gold)
+            p=np.asarray(r['recipient_probabilities']);p/=p.sum()
+            q=np.asarray(r['patched_probabilities']);q/=q.sum()
             side.append(dict(**base,group=r['group'],mode=r['mode'],condition=r['condition'],
+                kl=float((p*(np.log(p.clip(1e-15))-np.log(q.clip(1e-15)))).sum()),
+                **{f'original_{k}':v for k,v in initial.items()},**{f'edited_{k}':v for k,v in edited.items()},
                 **{f'delta_{k}':edited[k]-v for k,v in initial.items()}))
         for r in d['reconstruction_contrasts']:
             contrasts.append(dict(**base,**r))
@@ -84,6 +110,7 @@ def analyze(root,out,n_boot):
                 p=np.asarray(po);p/=p.sum();q=np.asarray(pr);q/=q.sum()
                 side.append(dict(**base,group=r['group'],mode='replace',condition='reconstruction',
                     kl=float((p*(np.log(p.clip(1e-15))-np.log(q.clip(1e-15)))).sum()),
+                    **{f'original_{k}':v for k,v in initial.items()},**{f'edited_{k}':v for k,v in edited.items()},
                     **{f'delta_{k}':edited[k]-v for k,v in initial.items()}))
         for r in d['fidelity']:
             key=(d['layer'],r['group'],r['stratum'])
@@ -114,7 +141,7 @@ def analyze(root,out,n_boot):
     atomic_json(out/'audit.json',dict(cases=len(manifest['case_ids']),layer_decisions=len(payloads),
         max_control_error=max(c['error'] for d in payloads for c in d['controls']),
         manifest_sha256=digest(root/'manifest.json'),n_boot=n_boot,seed=0,
-        caution='Pilot intervals are not evidence of population stability; ratios are not mediation percentages.'))
+        caution=('Pilot intervals are not evidence of population stability. ' if len(manifest['case_ids'])<10 else 'Exploratory discovery analysis. ')+'Ratios are not mediation percentages.'))
     atomic_json(out/'summary.json',dict(patches=summary,contrast_fidelity=replace,fve=fv))
     import matplotlib
     matplotlib.use('Agg')

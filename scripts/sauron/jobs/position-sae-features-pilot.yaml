@@ -1,0 +1,9 @@
+name: position-sae-features-pilot
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 8
+memory: 8g
+cpus: 2
+max_time: 10m
+workspace: sae-position-sae-mechanism-v1
+command: bash scripts/sauron/position_sae_features_pilot.sauron

@@ -1,0 +1,10 @@
+#!/bin/bash
+set -euo pipefail
+export PYTHONUNBUFFERED=1 TOKENIZERS_PARALLELISM=false LAYA_CUDA_AMP=fp32
+export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 PYTHONNOUSERSITE=1
+PY=/workspace/sae-position-mechanism/.venv-sauron/bin/python
+"$PY" -m unittest discover -s tests -p 'test_position*.py' -v
+"$PY" run_position_sae_features.py --weights checkpoints/saes_laya \
+ --selection docs/position-sae-mechanism/features/selection.json \
+ --reference results/position_sae_mechanism/discovery_audit_v1 \
+ --limit 2 --n-null 4 --out results/position_sae_mechanism/features_pilot_v1

@@ -1,0 +1,7 @@
+layer,group,tokens,eligible,outside,fraction_outside,outside_delta_energy_fraction
+enc_08,all_tokens,29777,29777,0,0.0,0.0
+enc_08,markers,410,410,0,0.0,0.0
+enc_08,nonmarkers,29367,29367,0,0.0,0.0
+enc_17,all_tokens,29777,28383,1394,0.046814655606676296,0.9980149166377069
+enc_17,markers,410,410,0,0.0,0.0
+enc_17,nonmarkers,29367,27973,1394,0.04746824667143392,0.9980348788776221
