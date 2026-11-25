@@ -321,6 +321,11 @@ def main():
         key_cols = ["K"]
 
     df = pd.DataFrame(conds)
+    if df.empty:  # test re-run with no cell that qualified on dev
+        (out / args.subset / "summary.json").write_text(json.dumps({"experiment": args.exp, "subset": args.subset, "baseline": base, "argmax_agreement_official": agree,
+                                                                      "cells": [], "note": "nenhuma célula qualificou no dev; nada a replicar no teste"}, indent=1))
+        print("[pos] nothing to run: no cell qualified on dev", flush=True)
+        return
     df.to_csv(out / args.subset / "conditions.csv", index=False)
     np.savez_compressed(out / args.subset / "dec_arrays.npz", **{"_".join(map(str, k)) + "_" + n: v for k, d in store.items() for n, v in d.items()},
                         dec_case=runner.dec_case, dec_type=runner.dec_type)
