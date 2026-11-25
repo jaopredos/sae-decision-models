@@ -1,0 +1,19 @@
+# Stage 8: remoção do subespaço de posição (PROTOCOLO.md, emenda 7). Roda o dev e, depois, só as células que qualificaram no dev, no teste.
+#
+#   sauron submit -c scripts/sauron/jobs/position-subspace-single.yaml scripts/sauron/position_subspace.sauron
+#
+# MODES ("single" ou "onward"); LIMIT > 0 e LAYERS: versão curta (saída em position_causal_short).
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+: "${MODES:?defina MODES}"
+LIMIT="${LIMIT:-0}"
+OUT=results/sae_features/position_causal
+(( LIMIT > 0 )) && OUT=results/sae_features/position_causal_short
+for SUBSET in dev test; do
+    uv run --frozen python run_position_causal.py --exp subspace --subset "${SUBSET}" --modes "${MODES}" --limit "${LIMIT}" \
+        ${LAYERS:+--layers "${LAYERS}"} ${N_NULL:+--n-null "${N_NULL}"} --device cuda --out "${OUT}"
+done

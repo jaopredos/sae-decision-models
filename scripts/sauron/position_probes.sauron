@@ -1,0 +1,17 @@
+# Stage 8 (PROTOCOLO.md, emenda 7): sondas de posição, conteúdo e resposta sobre os vetores de rotação já extraídos (sem nova passada do modelo).
+#
+#   sauron submit -c scripts/sauron/jobs/position-probes.yaml scripts/sauron/position_probes.sauron
+#
+# LAYERS (opcional, ex.: "enc_08,enc_17"): versão curta com poucas camadas.
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+for SPLIT in train test; do
+    [[ -f "data/activations/rotation/${SPLIT}/meta.json" ]] || die "falta data/activations/rotation/${SPLIT}: rode antes o rotation-extract"
+done
+OUT=results/sae_features/position_probes
+[[ -n "${LAYERS:-}" ]] && OUT=results/sae_features/position_probes_short
+uv run --frozen python run_position_probes.py --device cuda --out "${OUT}" ${LAYERS:+--layers "${LAYERS}"}

@@ -1,0 +1,17 @@
+# Sondas de posição, conteúdo e resposta sobre os vetores de rotação (emenda 7), 25 camadas.
+#
+#   sauron submit -c scripts/sauron/jobs/position-probes.yaml scripts/sauron/position_probes.sauron
+
+name: position-probes
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# 1ª ESTIMATIVA (nenhuma medida ainda): carrega 1 camada por vez (127 MB treino + 42 MB teste, float16) e o tensor denso [21.300, 5, 768] float32 (~330 MB) com cópias da padronização; a análise de rotações (mesmo tipo de carga) teve pico de 3,2 GiB.
+memory: 6g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"

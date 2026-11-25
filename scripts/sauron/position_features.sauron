@@ -1,0 +1,20 @@
+# Stage 8: ablação das features de maior eta^2 de posição (PROTOCOLO.md, emenda 7). Lista escolhida na descoberta; dev e teste.
+#
+#   sauron submit -c scripts/sauron/jobs/position-features-enc08.yaml scripts/sauron/position_features.sauron
+#
+# SAE (nome do checkpoint) e LAYER (rótulo da camada) obrigatórios; LIMIT > 0: versão curta (saída em position_causal_short).
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+: "${SAE:?defina SAE}"
+: "${LAYER:?defina LAYER}"
+LIMIT="${LIMIT:-0}"
+OUT=results/sae_features/position_causal
+(( LIMIT > 0 )) && OUT=results/sae_features/position_causal_short
+for SUBSET in test dev; do
+    uv run --frozen python run_position_causal.py --exp features --sae "${SAE}" --layer "${LAYER}" --subset "${SUBSET}" --limit "${LIMIT}" \
+        ${N_NULL:+--n-null "${N_NULL}"} --device cuda --out "${OUT}"
+done

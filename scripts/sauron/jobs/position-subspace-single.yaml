@@ -1,0 +1,18 @@
+# Remoção do subespaço de posição só na camada L (emenda 7), dev e teste.
+#
+#   sauron submit -c scripts/sauron/jobs/position-subspace-single.yaml scripts/sauron/position_subspace.sauron
+
+name: position-subspace-single
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# 1ª ESTIMATIVA (nenhuma medida ainda): mesmo modelo e casos da ablação (pico de 2,2 a 2,7 GiB) mais os vetores de uma camada por vez na estimativa dos subespaços (127 MB float16, ~370 MB em float64).
+memory: 6g
+cpus: 4
+max_time: 3h
+
+workspace: sae-decision-models
+
+env:
+  MODES: "single"
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"
