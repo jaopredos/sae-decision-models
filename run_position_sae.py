@@ -46,7 +46,9 @@ def checked_sae(root,name,device):
     digest=sha(path)
     if digest != checks[f'{name}/sae.pt']:raise ValueError('checkpoint hash differs')
     meta=json.loads((path.parent/'train_meta.json').read_text())
-    ck=torch.load(path,map_location='cpu',weights_only=True)
+    # Training metadata contains torch.__version__ as TorchVersion, a str subclass.
+    with torch.serialization.safe_globals([torch.torch_version.TorchVersion]):
+        ck=torch.load(path,map_location='cpu',weights_only=True)
     cfg=ck['config']; args=meta['args']
     expected_layer={'ml_enc08_k32':'enc_08','ml_enc17_k32':'enc_17'}[name]
     if (args['repo'],args['subfolder'],args['revision'],args['layer'],args['seed']) != ('convaiinnovations/laya','multilingual',LAYA_REVISION,expected_layer,0):
