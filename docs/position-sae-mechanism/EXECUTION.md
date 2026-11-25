@@ -1,49 +1,57 @@
 # Execução e retomada
 
-## Rodada atual
+## A concluída e auditada
 
-- Job **4507**, ID `a069279a17e148a799f96f3b1ef3e39f`.
-- Submetido em 2026-11-25. Estado após submissão não acompanhado continuamente.
-- Código/preparação: `e28c74b`; código científico idêntico ao piloto `728eeed`.
-- Objetivo: etapa A, auditoria de fidelidade do contraste de ordem; estatísticas Δz
-  exploratórias para B, sem seleção causal de features nem treino novo.
-- 64 casos/94 decisões choice de descoberta; canônica/rotação, ambas as direções;
-  SAEs principais enc_17 e enc_08; quatro ruídos por condição.
+Job4507 concluiu 64 casos/94 choice, enc17+enc08, quatro ruídos, ambas as direções.
+Backup externo SHA256 `4265a098dd4f6c946b3e9653e3467e22fa0b7416bfb799962f11d2b673182989`.
+Manifestos, hashes e condições auditados; resultados em REPORT.md e discovery/.
+Enc17 passou gate funcional; enc08 demais tokens falhou. Nenhum SAE novo treinado.
+
+## Rodada atual B/C — piloto
+
+- Job **4511**, ID `87527809a46d42359d09762ad9a9e244`.
+- Código/protocolo/seleção de inferência congelados em `aab0d30`.
+- Submetido 2026-11-25; fila por cota livre zero, estimativa inicial ~18min, máximo2h.
+- Não acompanhado continuamente, sem alterar os demais jobs.
+- Dois casos/duas decisões de descoberta, enc17 k32, ambas as direções.
+- Quatro folds por caso; top32 de |delta z| por token, sem alvo de erro, logits ou flip.
+- Oito controles disjuntos pareados por frequência/magnitude; quatro ruídos de mesma
+  norma por token que selected-only. Transplante selected-only e drop-selected.
+- Inclui previsão por gradiente do contraste, exemplos de tokens e reprodução de A.
 - Workspace `~/workspace/sae-position-sae-mechanism-v1`.
-- Saída `results/position_sae_mechanism/discovery_audit_v1` nesse workspace.
-- Recursos: 1 GPU, mínimo solicitado 8 GB VRAM (classe disponível 89 GB), 8 GB RAM,
-  2 CPUs, 1 thread CPU/interop, limite 15 min. FP32/AMP off/TF32 off/MHA fastpath off.
+- Saída `results/position_sae_mechanism/features_pilot_v1` nesse workspace.
+- 1 GPU (mínimo8GB VRAM, classe89GB), RAM8GB, 2CPUs, limite10min, 1thread CPU/interop.
 
 ```powershell
-ssh sauron "sauron status 4507"
-ssh sauron "sauron logs 4507 -f"
+ssh sauron "sauron status 4511"
+ssh sauron "sauron logs 4511 -f"
 ```
 
-## Próxima retomada
+## Gates antes da coleta completa
 
-1. Conferir status e logs, COMPLETE, recursos e integridade; falha técnica não é
-   resultado científico negativo. Não modificar arquivos do job enquanto ativo.
-2. Compactar resultados, baixar para results/position_sae_mechanism/backups e
-   conferir SHA256 nas duas pontas antes de analisar.
-3. Rodar offline `python analyze_position_sae.py --input <diretorio> --out <analise>`.
-   Auditar denominadores/exclusões, FVE/delta por grupo/posição, fidelidade de
-   contraste, efeitos colaterais, E/O e distribuição; adicionar contrastes pareados
-   reconstruído versus E direto e ruído. Não interpretar intervalos por direção
-   como independentes e não chamar projeções de porcentagens explicadas.
-4. Decidir se a fidelidade permite B/C. O piloto já sinalizou perda de contraste
-   nos demais tokens: não ignorar esse sinal por boa FVE ou acurácia individual.
-5. Se necessário, auditar variantes já existentes (literal/k64/seed1) antes de
-   cogitar treino. Separar diagnóstico daquela configuração de juízo geral sobre SAE.
-6. Congelar seleção, mais ordens/manipulações e controles pareados antes de
-   validação causal em desenvolvimento; não selecionar features pelo erro do modelo.
-7. Comparativo final e revisão metodológica continuam pendentes. O teste existente
-   já foi usado. Confirmação genuinamente nova exige conjunto adicional pré-definido.
+1. Piloto precisa passar testes, replay de gradiente FP32 e referências all-features /
+   eligible do4507 (erro<=1e-4 logit); self e reset-all18 <=1e-5.
+2. Conferir COMPLETE, cobertura, hashes, recursos e preservação da lista/folds.
+3. Compactar piloto, baixar e conferir SHA256 nas duas pontas; rodar offline
+   analyze_position_sae_features.py. Auditor local validado ponta a ponta com modelo
+   sintético e teste que detecta adulteração de uma métrica salva.
+4. Passando gates técnicos, dimensionar e submeter os mesmos64/94 com código e
+   seleção idênticos. Ainda não foi submetida a coleta completa de features.
+5. Não adaptar K/listas/matching aos efeitos do piloto. Seus resultados causais
+   serão exploratórios, e não evidência populacional por dois casos.
+6. Dados completos: contrastes selected-minus-matched e perda drop-selected versus
+   média de perdas dos controles; médias dentro da pergunta/direção antes do
+   bootstrap por caso. Reportar dose, balanceamento, primeira ordem, efeitos
+   colaterais e estabilidade por workflow/direção.
+7. Depois: múltiplas ordens e controles de conteúdo/IDs/posição; robustez entre
+   dicionários e validação prospectiva da lista congelada no dev. O teste já foi
+   usado. Confirmação genuinamente nova requer conjunto adicional pré-definido.
 
-O piloto 4505 passou e foi preservado com hashes em REPORT.md. Job 4504 falhou
-antes da inferência por CRLF; preservado como incidente operacional.
+Enquanto4511 estiver na fila/rodando, NÃO atualizar os arquivos remotos usados por
+seu script. Analisadores e testes adicionais locais posteriores ao aab0d30 não
+foram enviados ao workspace do piloto em fila. Nenhum ambiente de colega alterado.
 
 ## PR recomendado
 
-Base: `experiment/position-mechanism`; head: `experiment/position-sae-mechanism`.
-Não foi criado PR, merge ou force-push. Relatórios parciais distinguem o que passou
-tecnicamente, o alerta de fidelidade e as etapas científicas ainda não realizadas.
+Base `experiment/position-mechanism`; head `experiment/position-sae-mechanism`.
+Não houve PR, merge ou force-push. Relatório comparativo final permanece pendente.

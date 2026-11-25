@@ -146,9 +146,17 @@ def analyze(root,out,n_boot):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
-    shown=[r for r in summary if r['layer']=='enc_17' and r['group']=='nonmarkers' and r['mode']=='path' and r['condition'] in ('full','eligible','reconstructed','residual','outside')]
-    fig,ax=plt.subplots(figsize=(8,4));ax.bar([r['condition'] for r in shown],[r['projection'] for r in shown])
-    ax.set_ylabel('Projection onto clean order contrast');ax.set_title(f'SAE enc17 path — {len(manifest["case_ids"])} discovery cases')
+    target={r['condition']:r for r in summary if r['layer']=='enc_17' and r['group']=='nonmarkers' and r['mode']=='path'}
+    order=['full','eligible','reconstructed','residual','outside']
+    shown=[target[k] for k in order]
+    labels=['Ativações\ncompletas','Ativações\nelegíveis','Delta\nreconstruído','Delta do\nresidual','Fora do\ndomínio']
+    values=[r['projection'] for r in shown]
+    errors=np.array([[max(0,r['projection']-r['ci'][0]),max(0,r['ci'][1]-r['projection'])] for r in shown]).T
+    fig,ax=plt.subplots(figsize=(8,4.4));ax.bar(labels,values,yerr=errors,capsize=4,color=['#667d8d','#667d8d','#277da8','#c78036','#8d8d8d'])
+    ax.axhline(0,color='black',linewidth=.6);ax.set_ylabel('Projeção no contraste limpo de ordem')
+    ax.set_title(f'Caminho enc17 → marcadores18 — {len(manifest["case_ids"])} casos de descoberta')
+    ax.text(.01,.98,'IC95% por caso; coeficientes não são porcentagens de mediação',transform=ax.transAxes,va='top',fontsize=8)
+    ax.set_ylim(-.015,max(r['ci'][1] for r in shown)*1.16)
     fig.tight_layout();fig.savefig(out/'path.png',dpi=170);plt.close(fig)
     return replace
 
