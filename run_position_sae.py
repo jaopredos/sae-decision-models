@@ -160,6 +160,7 @@ def collect(runner,sae,layer,case,qid,n_null,reference):
                     rows.append(dict(group=group,mode=mode,condition=condition,donor_order=d['order'],recipient_order=r['order'],
                         tokens=len(idx),eligible=int(good.sum()),outside=int(outside.sum()),delta_norm=float(change.norm()),
                         donor_logits=d['logits'],recipient_logits=r['logits'],patched_logits=result['logits'],
+                        donor_probabilities=d['probabilities'],recipient_probabilities=r['probabilities'],patched_probabilities=result['probabilities'],
                         **effect_metrics(d['logits'],r['logits'],result['logits'])))
                 error=max(abs(x-y) for x,y in zip(outputs['full'],outputs['recombined']))
                 if error>1e-4:raise ValueError(f'recombination logits differ: {error}')
@@ -171,6 +172,7 @@ def collect(runner,sae,layer,case,qid,n_null,reference):
         original=[x-y for x,y in zip(a['logits'],b['logits'])]
         replacement.append(dict(group=group,clean_contrast=original,reconstructed_contrast=contrast,
             original_logits=[a['logits'],b['logits']],reconstructed_logits=[o['logits'] for o in outs],
+            original_probabilities=[a['probabilities'],b['probabilities']],reconstructed_probabilities=[o['probabilities'] for o in outs],
             **effect_metrics(original,[0.]*k,contrast)))
     return dict(case_id=case['case_id'],qid=qid,workflow=case['workflow'],layer=layer,order_pair=orders,
         option_ids=a['ids'],gold=case['gold'][qid],seq_len=n,controls=controls,patches=rows,
