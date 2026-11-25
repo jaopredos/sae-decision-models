@@ -1,0 +1,18 @@
+#!/bin/bash
+set -euo pipefail
+export PYTHONUNBUFFERED=1 TOKENIZERS_PARALLELISM=false LAYA_CUDA_AMP=fp32
+export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+export PYTHONNOUSERSITE=1
+# Reuse the locked environment read-only; never sync or mutate another project's venv.
+PY=/workspace/sae-position-mechanism/.venv-sauron/bin/python
+test -x "$PY"
+OUT=results/position_sae_mechanism/pilot_v1
+mkdir -p "$OUT/environment"
+"$PY" -m pip --version > "$OUT/environment/pip.txt" 2>&1 || true
+"$PY" -m unittest discover -s tests -p 'test_position*.py' -v
+"$PY" -m pytest tests/test_sae.py tests/test_sae_intervention.py -q
+"$PY" run_position_sae.py --weights checkpoints/saes_laya \
+  --reference /workspace/sae-position-mechanism/results/position_mechanism/path_v1 \
+  --limit 2 --n-null 1 --out "$OUT"
+test -s "$OUT/COMPLETE.json"
+echo '[sae-audit] PILOT PASSED; resource and scientific audit required before full run'

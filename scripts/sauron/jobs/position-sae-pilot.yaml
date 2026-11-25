@@ -1,0 +1,8 @@
+name: position-sae-audit-pilot
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 20
+memory: 8g
+cpus: 2
+max_time: 15m
+workspace: sae-position-sae-mechanism-v1

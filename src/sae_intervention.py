@@ -3,7 +3,7 @@
 Used for the downstream-fidelity measurements of stage 4 and meant to be reused, unchanged, by the
 causal ablation that comes after. Modes (all act only at the positions selected by `position_mask`):
 
-  edit     h' = h + (decode(z_edited) - decode(z)) / scale. The SAE's reconstruction error stays in
+  edit     h' = h + decode(z_edited) - decode(z). The SAE's reconstruction error stays in
            the stream, so with no edits h' is exactly h, and an edit moves the layer output only by
            the decoder directions of the edited features. This is the mode for ablations.
   replace  h' = decode(z) (the SAE reconstruction replaces the activation; error is dropped).

@@ -19,3 +19,6 @@ results/sae_features/part_c*/*.parquet
 
 # Position-order experiments: raw per-decision outputs and environments
 results/position_mechanism/
+
+# SAE order mechanism: raw pilot and experiment artifacts
+results/position_sae_mechanism/
