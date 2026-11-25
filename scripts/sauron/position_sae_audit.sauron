@@ -1,0 +1,23 @@
+#!/bin/bash
+set -euo pipefail
+export PYTHONUNBUFFERED=1 TOKENIZERS_PARALLELISM=false LAYA_CUDA_AMP=fp32
+export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 PYTHONNOUSERSITE=1
+PY=/workspace/sae-position-mechanism/.venv-sauron/bin/python
+"$PY" - <<'PYEOF'
+import json,hashlib
+from pathlib import Path
+root=Path('results/position_sae_mechanism/pilot_v1')
+complete=json.loads((root/'COMPLETE.json').read_text())
+manifest=json.loads((root/'manifest.json').read_text())
+assert hashlib.sha256((root/'manifest.json').read_bytes()).hexdigest()==complete['manifest_sha256']
+assert complete['cases']==2 and complete['layer_decisions']==4
+for name,h in manifest['files'].items():
+    assert hashlib.sha256(Path(name).read_bytes()).hexdigest()==h, f'pilot source changed: {name}'
+for name,h in complete['decision_sha256'].items():
+    assert hashlib.sha256((root/name).read_bytes()).hexdigest()==h
+print('[sae-audit] frozen pilot source and result hashes verified')
+PYEOF
+"$PY" -m unittest discover -s tests -p 'test_position*.py' -v
+"$PY" run_position_sae.py --weights checkpoints/saes_laya \
+  --reference /workspace/sae-position-mechanism/results/position_mechanism/path_v1 \
+  --limit 64 --n-null 4 --out results/position_sae_mechanism/discovery_audit_v1
