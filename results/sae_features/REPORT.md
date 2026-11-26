@@ -1,7 +1,7 @@
 # SAE e features que explicam o erro do Laya no typed-decisions (etapas 4 e 5)
 
-Tudo aqui é **correlacional**, exceto a fidelidade a jusante (que mede o SAE, não as features). A **ablação causal** da seção 7 foi feita depois, com protocolo próprio. Critérios e limiares foram fixados antes dos jobs em `PROTOCOLO.md`; as seis
-emendas (feitas por causa do que os dados mostraram; a 4 e a 5 são da ablação, a 6 da rotação e da semente) estão datadas lá e resumidas na seção 2 e nas seções 7 a 9. As tabelas completas, geradas dos artefatos
+Tudo aqui é **correlacional**, exceto a fidelidade a jusante (que mede o SAE, não as features). A **ablação causal** da seção 7 foi feita depois, com protocolo próprio. Critérios e limiares foram fixados antes dos jobs em `PROTOCOLO.md`; as sete
+emendas (feitas por causa do que os dados mostraram; a 4 e a 5 são da ablação, a 6 da rotação e da semente, a 7 da causa da sensibilidade à posição) estão datadas lá e resumidas na seção 2 e nas seções 7 a 10. As tabelas completas, geradas dos artefatos
 sem interpretação, estão em `REPORT_tables.md`.
 
 ## Resumo
@@ -21,6 +21,7 @@ sem interpretação, estão em `REPORT_tables.md`.
   (muito acima de conjuntos aleatórios pareados). Mas o efeito **não é relevante nem específico**: em `enc_08` é ~2% da margem (corrige 0,8% dos erros) e em `enc_17` é ~20% da margem, porém a acurácia
   total **cai** (−0,7 p.p. no dev, −1,4 p.p. no teste), porque a intervenção quebra 17% das decisões certas. A previsão de primeira ordem acerta bem o efeito de features individuais (Spearman 0,90–0,93).
 - **Rotação de opções (seção 8):** o viés de prior em `choice` **não é posicional** (maior desvio por posição 3,2 p.p., abaixo do critério de 5 p.p.): é de conteúdo. Em `score` o Laya quase nunca escolhe a primeira opção (−18 p.p.). Com a ordem balanceada, a acurácia do Laya (0,334) fica indistinguível do acaso (0,318). O probe de `enc_08` depende da ordem original (0,50 → 0,27 nas rotações); o de `enc_17` mantém conteúdo (0,52 → 0,42, acaso ~0,24).
+- **Causa da sensibilidade à posição (seção 10):** em `score`, remover o subespaço de posição dos marcadores da camada 22 (ou da 14) reduz a taxa de troca em 16 a 18 p.p. (~20%) sem perder acurácia, e zerar só 5 a 20 features do SAE de `enc_17` a reduz em ~10 p.p.; em `enc_08` as features não têm efeito. A posição é legível em todas as camadas (acurácia ~1,0); uma sonda treinada nas rotações chega a 0,559, então o conteúdo está lá. Eu esperava poucos efeitos e errei.
 - **Sementes (seção 9):** o efeito agregado da ablação se repete com a semente 1 nas duas camadas, mas só ~50% das features têm correspondente e a lista da ablação não é estável (15% e 35%): o ranking de features individuais depende da semente.
 - **Parte C (base × fine-tuned em inglês):** entradas idênticas confirmadas; a configuração comum não distorce o base (0,3625 contra 0,3630). No base, marcadores massivos
   (fora do SAE) ocorrem **só na opção `true` das perguntas `noul`** (em 1/3 delas); nessas, o base responde `true` em 90–92% dos casos quando esse marcador é massivo e em 54–55% quando não é
@@ -259,7 +260,7 @@ Treino (1.200 casos, 21.300 linhas decisão × rotação) e teste (400 casos, 7.
 - **`enc_08`**: na rotação 3 o probe cai para 0,274, perto do acaso. A vantagem dele nessa camada depende da posição/ordem das opções, não só do conteúdo.
 - **`enc_17`**: cai de 0,52 para 0,42, mas **continua bem acima do acaso (~0,24) e do Laya (0,24 a 0,29)** nas rotações 1 a 3: o conteúdo da opção é legível nessa camada, ainda que parte do ganho também venha da posição.
 - Em `noul` (2 opções): probe `enc_17` 0,70 → 0,59 e `enc_08` 0,68 → 0,66; Laya 0,49 → 0,48.
-- **Consequência para a etapa 3:** o 0,574 do probe em `enc_17` vem de um probe treinado e testado na ordem original; esta análise mostra que, por conteúdo apenas, o ganho é menor (~0,42 nas rotações 1 a 3 em k ≥ 4, contra 0,52 na ordem original, nas mesmas decisões). Não treinei um probe nas rotações (que mediria a legibilidade do conteúdo sem a posição correlacionada); fica como análise adicional.
+- **Consequência para a etapa 3:** o 0,574 do probe em `enc_17` vem de um probe treinado e testado na ordem original; esta análise mostra que, por conteúdo apenas, o ganho é menor (~0,42 nas rotações 1 a 3 em k ≥ 4, contra 0,52 na ordem original, nas mesmas decisões). Um probe treinado nas rotações foi feito depois (seção 10.1): chega a 0,559 no teste, indistinguível do 0,574; o probe antigo se apoiava na posição, mas a informação de conteúdo está na representação.
 
 **A3, posição e conteúdo por camada** (η² de duas vias do vetor do marcador, por pergunta, quadrado latino; teste; resíduo = variação dentro da mesma posição e opção, isto é, o resto do caso):
 
@@ -310,7 +311,114 @@ SAEs de semente 1 (mesmos hiperparâmetros, orçamento e regra de massivos; jobs
   Mesmo sinal, acima do percentil 95 do nulo e IC fora de zero nas duas sementes; mesma leitura (desprezível em `enc_08`; grande mas não específico em `enc_17`, com a acurácia total caindo). O tamanho do efeito em `enc_17` varia com a semente (20% contra 29% da margem).
 - **O que isto implica:** o resultado **agregado** da ablação (o efeito de um conjunto de features no marcador escolhido) é reprodutível; o **ranking de features individuais** (listas, cartões, "a feature X") **depende da semente** e deve ser descrito como candidato daquela semente, nunca como "a feature do erro".
 
-## 10. Limitações
+## 10. O que causa a sensibilidade à posição (emenda 7)
+
+**Pergunta e medida.** "O que acontece por dentro que causa sensibilidade à posição?" Sensibilidade = **taxa de troca** (fração das decisões cuja escolha não é a mesma nas k rotações cíclicas das opções). Foco em `score`, escolhido **depois** de ver o resultado da seção 8 (declarado no `PROTOCOLO.md`); `choice` e `noul` saem ao lado nos mesmos arquivos (`conditions.csv`). Três experimentos, com critérios e expectativas fixados antes de rodar.
+Jobs: sondas 4581; subespaço `single` 4582 e `onward` 4583; features `enc_08` 4584 e `enc_17` 4585 (versões curtas 4519 a 4523 antes). Paridade do argmax em lote com o `predict` oficial rotacionado: 0,9975 (dev) e 0,9976 (teste). Artefatos: `position_probes/`, `position_causal/{subspace_single,subspace_onward,features_ml_enc08_k32,features_ml_enc17_k32}/`.
+
+### 10.1 E1, o que cada camada guarda (sondas sobre os vetores de rotação; teste)
+| camada | posição legível (`score`; todas) | identidade da opção legível | sonda de resposta treinada nas rotações (`score`; todas) |
+|---|---|---|---|
+| 1 | 1,00; 1,00 | 1,00; 1,00 | 0,36; 0,45 |
+| 5 | 1,00; 1,00 | 1,00; 1,00 | 0,42; 0,51 |
+| 8 | 1,00; 1,00 | 1,00; 1,00 | 0,43; 0,53 |
+| 12 | 1,00; 1,00 | 1,00; 1,00 | 0,46; 0,54 |
+| 17 | 1,00; 1,00 | 1,00; 1,00 | **0,46; 0,56** |
+| 22 | 0,98; 0,96 | 1,00; 1,00 | 0,44; 0,55 |
+| `final_norm` | 0,98; 0,96 | 1,00; 1,00 | 0,44; 0,55 |
+| `h2` (cabeça) | 0,64; 0,55 | 0,95; 0,95 | 0,36; 0,49 |
+
+Acaso: 0,24 (`score`) e 0,26 (todas) para os dois classificadores; para a sonda de resposta, 0,24 e 0,32; o Laya com a ordem balanceada acerta 0,276 (`score`) e 0,334 (todas). A camada da sonda de resposta foi escolhida no dev (`enc_17`): teste **0,559 [0,539; 0,579]** (todas) e **0,460 [0,433; 0,487]** (`score`). Figura: `position_probes/probes_by_layer.png`.
+- **A posição da opção é legível por um classificador linear em todas as camadas do encoder**, quase perfeitamente, e só cai na cabeça de decisão (`h2`: 0,64). Isso convive com o η² de posição baixo nas camadas tardias (seção 8): pouca variância não é pouca informação.
+- **A identidade da opção também é legível desde a camada 1** (1,00): dentro de um grupo de pergunta cada opção tem texto diferente. A expectativa da emenda ("a partir da camada 5") estava errada; o que muda na camada 5 é o que domina a *variância*, não o que é *legível*.
+- **Há conteúdo da resposta legível sem a posição:** critério da emenda (acurácia no teste na camada do dev acima do acaso balanceado 0,318 por ≥ 5 p.p., com IC95% acima de 0,318) **atendido**. 0,559 é indistinguível do 0,574 do probe da etapa 3 (IC95% inclui 0,574): **corrige a ressalva da seção 8**; o probe antigo se apoiava na posição (cai nas rotações), mas a representação carrega conteúdo suficiente para chegar ao mesmo número quando a posição é descorrelacionada da resposta. A cabeça de decisão perde parte disso (0,49 em `h2`).
+
+### 10.2 E2, remover o subespaço de posição dos marcadores (`score`)
+Direções entre-classe estimadas na descoberta (dimensões do subespaço de posição: 2 a 3 nas camadas 1 a 4, 5 na camada 8, 10 na 14, 9 na 17, 7 na 22; o de conteúdo, controle, bate no teto de 16 na maioria das camadas, isto é, remove *mais* dimensões que o de posição). 20 subespaços aleatórios de mesma dimensão como nulo por célula. Taxa de troca de base: 0,858 (dev) e 0,829 (teste). Δ em pontos percentuais, controle = remover o subespaço de conteúdo.
+
+**Só na camada L (`single`):**
+
+| camada | Δ troca dev (IC95%) | Δ acc dev | controle de conteúdo dev | qualifica no dev | Δ troca teste (IC95%) | Δ acc teste | controle teste | qualifica no teste |
+|---|---|---|---|---|---|---|---|---|
+| 1 | +7,5 [+3,3; +11,7] | −3,1 | +5,6 | não | — | — | — | — |
+| 2 | +7,2 [+4,2; +10,3] | −0,8 | +11,1 | não | — | — | — | — |
+| 3 | +2,8 [−0,3; +5,8] | −0,3 | +0,8 | não | — | — | — | — |
+| 4 | +0,6 [−1,7; +2,8] | +0,2 | +5,8 | não | — | — | — | — |
+| 5 | +6,9 [+3,9; +10,0] | −0,5 | +6,4 | não | — | — | — | — |
+| 6 | +3,1 [+0,6; +5,8] | −0,3 | +1,4 | não | — | — | — | — |
+| 8 | −4,4 [−6,7; −2,2] | +0,2 | −0,8 | **sim** | −3,2 [−4,9; −1,8] | −0,4 | +0,1 | **sim** |
+| 10 | +3,3 [+1,1; +5,8] | −0,1 | −1,4 | não | — | — | — | — |
+| 12 | −8,9 [−12,8; −5,3] | +0,3 | −4,7 | não | — | — | — | — |
+| 14 | −18,3 [−22,5; −14,4] | +0,0 | −5,6 | **sim** | −17,9 [−20,6; −15,6] | −1,5 | −3,6 | **sim** |
+| 17 | −11,7 [−15,6; −7,8] | −1,7 | +2,5 | **sim** | −13,2 [−16,0; −10,2] | −3,2 | +1,1 | não |
+| 20 | +3,9 [+0,0; +7,8] | −4,2 | +9,7 | não | — | — | — | — |
+| 22 | −14,2 [−19,2; −8,9] | +2,7 | +0,0 | **sim** | −16,4 [−19,8; −13,1] | +1,6 | −0,5 | **sim** |
+
+**Da camada L até a 22 (`onward`):** só a camada 22 qualifica (é a mesma intervenção que `single` na 22; números idênticos, o que confere o determinismo). Dev completo:
+
+| camada | Δ troca dev (IC95%) | Δ acc dev | controle de conteúdo dev | qualifica no dev | Δ troca teste (IC95%) | Δ acc teste | controle teste | qualifica no teste |
+|---|---|---|---|---|---|---|---|---|
+| 1 | +9,4 [+5,5; +13,1] | −1,3 | +13,3 | não | — | — | — | — |
+| 2 | +3,6 [−1,1; +8,3] | −3,9 | +9,2 | não | — | — | — | — |
+| 3 | +5,3 [+0,5; +9,7] | −3,4 | +4,2 | não | — | — | — | — |
+| 4 | +3,1 [−2,5; +7,5] | −3,6 | +2,2 | não | — | — | — | — |
+| 5 | +5,3 [+0,8; +9,7] | −5,1 | +2,5 | não | — | — | — | — |
+| 6 | +6,4 [+1,7; +10,8] | −3,3 | +5,6 | não | — | — | — | — |
+| 8 | +2,5 [−2,2; +6,9] | −3,8 | +2,2 | não | — | — | — | — |
+| 10 | +2,2 [−2,8; +6,4] | −2,6 | +2,8 | não | — | — | — | — |
+| 12 | −2,8 [−8,3; +2,5] | −4,1 | +1,1 | não | — | — | — | — |
+| 14 | −2,2 [−7,5; +2,8] | −3,7 | −3,9 | não | — | — | — | — |
+| 17 | −0,3 [−5,0; +4,4] | −1,4 | +5,3 | não | — | — | — | — |
+| 20 | −6,1 [−11,1; −1,4] | −4,6 | −1,4 | não | — | — | — | — |
+| 22 | −14,2 [−19,2; −8,9] | +2,7 | +0,0 | **sim** | −16,4 [−19,8; −13,1] | +1,6 | −0,5 | **sim** |
+
+- **Qualificam e replicam no teste: 8 (efeito pequeno), 14 e 22.** A 17 reduz a troca em 13 p.p. no teste, mas **a acurácia cai 3,2 p.p. e não qualifica**. A 12 quase qualificou no dev (−8,9 p.p.), mas o controle de conteúdo também mexeu (−4,7) e a especificidade a barrou.
+- **A camada 22 é a mais limpa**: a troca cai de 0,829 para 0,665 no teste (−16,4 p.p., cerca de **20% da sensibilidade**), a acurácia sobe 1,6 p.p. (IC95% [−0,3; +3,5]), o controle de conteúdo não mexe (−0,5) e `choice` quase não muda. O desvio da primeira opção vai de −18,1 p.p. para +3,9 p.p. e o da última de +10,9 para −4,1: **o sinal de posição no marcador da camada 22 carrega o viés posicional do `score`**. A 14 tem o maior efeito (−17,9 p.p., 22% da sensibilidade), um pouco menos específico (controle −3,6).
+- **Nas camadas 1 a 6 e 10 a 20 sem efeito útil:** remover a posição ali *aumenta* a troca (+2 a +8 p.p.) e perturba o modelo (acurácia −4,2 p.p. na 20).
+- **O `onward` não soma:** remover da 14 até a 22 dá −2,2 p.p. (IC95% inclui zero), embora cada uma das camadas 14 e 22 sozinha dê −14 a −18. **Não sei explicar** (hipóteses, como o modelo compensar ou desorganizar-se com a remoção em várias camadas, NÃO VERIFICADAS).
+- **Expectativa da emenda DESMENTIDA:** eu esperava efeito pequeno em `single` e nenhuma ou poucas células qualificadas.
+
+### 10.3 E3, zerar as features do SAE de maior η² de posição (semente 0; `score`)
+Lista escolhida só na descoberta (η² de posição em `enc_08`: 0,92, 0,85, 0,84, 0,75, 0,74 as 5 maiores, 0,17 a 100ª; em `enc_17`: 0,89, 0,79, 0,65, 0,62, 0,53 e 0,10), zeradas em todos os marcadores; controle = as K de maior η² de conteúdo; nulo = 20 conjuntos pareados por frequência. Avaliação primária no teste; dev como segunda conferência independente.
+
+**`enc_08`** (1.032 features com suporte):
+
+| K | Δ troca teste (IC95%) | Δ acc teste | controle de conteúdo | nulo (percentil 5; média) | qualifica no teste | Δ troca dev | qualifica no dev |
+|---|---|---|---|---|---|---|---|
+| 5 | −0,9 [−1,8; −0,1] | −0,2 | +0,0 | −4,63; −0,47 | não | −1,7 | não |
+| 20 | −0,7 [−1,5; +0,0] | +0,1 | +0,0 | −4,63; −1,09 | não | −0,8 | não |
+| 100 | +10,0 [+7,4; +12,8] | −1,8 | +0,1 | −4,02; −0,36 | não | +8,3 | não |
+
+**`enc_17`** (1.535 features com suporte):
+
+| K | Δ troca teste (IC95%) | Δ acc teste | controle de conteúdo | nulo (percentil 5; média) | qualifica no teste | Δ troca dev | qualifica no dev |
+|---|---|---|---|---|---|---|---|
+| 5 | −10,0 [−12,2; −7,8] | −0,7 | +0,0 | −0,26; +0,59 | **sim** | −9,4 | sim |
+| 20 | −10,9 [−13,2; −8,6] | −0,6 | +0,0 | −0,38; +0,48 | **sim** | −10,0 | sim |
+| 100 | −6,6 [−9,1; −4,1] | −1,9 | +3,9 | −0,63; +2,46 | não | −5,0 | não |
+
+- **`enc_08`: nenhuma célula qualifica** (expectativa confirmada). Com K = 100 o modelo só é perturbado (a troca sobe 10 p.p.).
+- **`enc_17`: 5 ou 20 features bastam** (K = 5 e K = 20 qualificam no teste e no dev): a troca cai 10 a 11 p.p. (cerca de 12% da sensibilidade) com acurácia praticamente intacta (−0,6 p.p., IC95% inclui zero), controle de conteúdo em zero e `choice`/`noul` sem mudança; o nulo tem média +0,5 p.p. Com K = 100 o efeito diminui (−6,6) e a especificidade falha (controle +3,9). **Expectativa da emenda DESMENTIDA em `enc_17`.**
+- A primeira opção vai só de −18 para −13 p.p. (+5 p.p.): essas features carregam **parte** do sinal de posição, bem menos que o subespaço inteiro da camada 22.
+
+### 10.4 Contra as expectativas fixadas antes de rodar
+| experimento | expectativa | resultado |
+|---|---|---|
+| E1 posição legível | ≥ acaso + 20 p.p. até a camada 22 | confirmada (1,00 até a 21) |
+| E1 identidade legível | ≥ 0,9 a partir da camada 5 | desmentida na direção: 1,00 desde a 1 |
+| E1 resposta sem posição | abaixo de 0,574 e acima do Laya | critério atendido (0,559); indistinguível de 0,574 |
+| E2 `single` | efeito pequeno | **desmentida**: camadas 14 e 22 reduzem a troca em 16 a 18 p.p. |
+| E2 `onward` | grande e pouco específico | confirmada em 1 a 10 (perturba), mas `onward` na 22 qualifica e não soma |
+| E3 `enc_08` | sem célula qualificada | confirmada |
+| E3 `enc_17` | sem célula qualificada | **desmentida**: K = 5 e 20 qualificam |
+
+### 10.5 O que sustenta e os limites
+- **Sustenta:** a sensibilidade à posição do `score` tem uma causa interna localizada: o sinal de posição presente nos marcadores nas camadas médias e tardias (14 e 22, com 5 a 20 features do SAE de `enc_17` carregando parte dele), que a cabeça de decisão lê. Removê-lo, sem perda de acurácia, tira entre 12% e 22% da taxa de troca.
+- **Não sustenta:** que seja a **única** causa (sobram ~65% de decisões trocando); que valha para `choice` ou `noul` (o efeito aparece em `score`, onde a sensibilidade e o viés posicional são grandes); nada sobre os modelos em inglês.
+- **Comparações múltiplas:** 26 células foram avaliadas no dev (13 camadas × 2 modos), e 6 no E3. Quatro células distintas qualificaram no dev em E2 (`single` nas camadas 8, 14, 17 e 22; a do `onward` na 22 é a mesma intervenção), um número que o acaso sozinho (p ≤ 0,05) poderia produzir em 1 ou 2; mas três replicam no teste (8, 14 e 22) e os efeitos das duas maiores são dezenas de vezes maiores que a dispersão do nulo. O p empírico de 0,048 é o piso possível com 20 sorteios.
+- **Limites:** a remoção é só nos marcadores e o subespaço é o das médias por posição (linear); `score` é uma escala ordinal, então "posição" e "ordem esperada da escala" não se separam por rotação; o nulo do E3 mostra dispersão de vários p.p. em `enc_08`, mais larga que a do subespaço; E3 só com a semente 0 (o ranking de features depende da semente, seção 9); as camadas finais (`final_norm`, `h1`, `h2`) não foram testadas e o efeito se concentra no fim (análise exploratória possível, fora do protocolo).
+
+## 11. Limitações
 
 - **Correlacional (seções 5 e 6).** O CMH controla pergunta e identidade da opção, não o resto do conteúdo do caso; features significativas são candidatas. A ablação da seção 7 testa só um recorte (as features de maior atribuição, em duas camadas, por zeragem).
 - **Tokens massivos fora do SAE.** Se carregarem informação usada pelo scorer, as features não a mostram; no base em inglês eles estão associados à resposta `true` em `noul` (seção 6).
@@ -322,7 +430,7 @@ SAEs de semente 1 (mesmos hiperparâmetros, orçamento e regra de massivos; jobs
 - Duas sementes por SAE (0 e 1) e uma largura (16×). A semente 1 só tem qualidade, estatísticas de features, ablação e pareamento (seção 9); os cartões e a Parte C são da semente 0. A variante k = 64 foi treinada e medida em qualidade (seção 3), mas as análises de features e a ablação só existem para k = 32.
 - Rotações só no multilíngue e só em ordem cíclica; o fine-tuned em inglês não foi rotacionado (seção 8).
 
-## 11. Reprodutibilidade
+## 12. Reprodutibilidade
 
 - **Código:** branch `experiment/sae-features` (a partir de `experiment/linear-probe`). Ambiente: `uv.lock` (sha256 `68a486f3…`), Python 3.14.10, torch 2.15.0+cu132 (CUDA 13.2), laya 0.4.30, transformers 5.22.2; GPU: NVIDIA B200 MIG 3g.90gb; `pip_freeze.txt` ao lado.
 - **Sementes:** 0 (inicialização do SAE, ordem dos dados, bootstrap, probes fora da dobra). Revisões: `convaiinnovations/laya` `7b928d82…` (multilíngue) e `e333cb7c…` (par em inglês); dataset `c76749ec…`.
@@ -330,6 +438,7 @@ SAEs de semente 1 (mesmos hiperparâmetros, orçamento e regra de massivos; jobs
   qualidade 3619 (`enc_08`), 3621 (`enc_17`), 3623 (literal), 3629 (dom20), 3635 (base), 3643 (cópia); features 3618/3626/3631 (`enc_08`, 3631 = estrato por visão), 3620/3627/3632 (`enc_17`, 3632 = estrato por visão);
   Parte C: extração 3617 (curto) / 3625, tokens 3624 / 3633, SAE do base 3634, features base 3636, features fine-tuned 3637, comparação 3638, marcadores massivos 3640, cópia do SAE 3641, features da cópia 3644, comparação com cópia 3647, cartões das features que mais mudam 3656.
   Ablação causal: 3874 (`enc_08`) e 3875 (`enc_17`).
+  Posição (emenda 7): sondas 4581, subespaço 4582 (`single`) e 4583 (`onward`), features 4584 (`enc_08`) e 4585 (`enc_17`); versões curtas 4519 a 4523.
   Rotação e semente 1 (emenda 6): treino 4171/4172, extração das rotações 4173, qualidade 4174/4176, features 4175/4177, análise das rotações 4179, ablação 4180/4181, pareamento 4182.
 - **RAM medida (pico, pedido):** corpus 1,8 GiB (3g); extração de tokens 8,0 GiB (8g, page cache do memmap); treino 6,0 GiB (8g); qualidade 2,8–4,0 GiB; features 2,7–4,4 GiB; Parte C: extração 9,1 GiB (10g), tokens 10,0 GiB (10g), SAE do base 7,8 GiB (10g).
 - **Artefatos** (relativos à raiz; os parquets de estatísticas e `attribution/` não vão para o git: ficam no cluster em `~/workspace/sae-decision-models/results/sae_features/` e no Mac):

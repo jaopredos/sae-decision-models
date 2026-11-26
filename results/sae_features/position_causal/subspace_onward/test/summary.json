@@ -1,0 +1,50 @@
+{
+ "experiment": "subspace",
+ "subset": "test",
+ "n_decisions": 2000,
+ "baseline": {
+  "flip_score": 0.82875,
+  "acc_score": 0.2761875,
+  "kl_score": 0.0,
+  "flip_choice": 0.39166666666666666,
+  "acc_choice": 0.25983333333333336,
+  "kl_choice": 0.0,
+  "flip_noul": 0.06166666666666667,
+  "acc_noul": 0.4875,
+  "kl_noul": 0.0,
+  "first_score": -18.142857142857142,
+  "last_score": 10.785714285714288,
+  "first_choice": 2.0000000000000018,
+  "last_choice": 1.6249999999999987,
+  "first_noul": -2.0833333333333313,
+  "last_noul": 2.083333333333337
+ },
+ "argmax_agreement_official": 0.9976056338028169,
+ "n_null": 20,
+ "cells": [
+  {
+   "layer": 22,
+   "mode": "onward",
+   "dflip_score_pp": -16.374999999999996,
+   "dflip_ci": [
+    -19.753125,
+    -13.125
+   ],
+   "dacc_score_pp": 1.5812500000000007,
+   "dacc_ci": [
+    -0.3004687499999999,
+    3.4624999999999995
+   ],
+   "null_p5": -0.2562499999999951,
+   "null_mean": 0.012500000000001954,
+   "p_empirical": 0.047619047619047616,
+   "dflip_content_pp": -0.5000000000000004,
+   "dflip_choice_pp": -1.0000000000000009,
+   "dflip_noul_pp": 2.999999999999999,
+   "first_score_shift_pp": 22.0,
+   "kl_score": 0.21303310990333557,
+   "qualifies": true
+  }
+ ],
+ "elapsed_s": 262.9
+}

@@ -1,0 +1,93 @@
+{
+ "experiment": "features",
+ "subset": "test",
+ "n_decisions": 2000,
+ "baseline": {
+  "flip_score": 0.82875,
+  "acc_score": 0.2761875,
+  "kl_score": 0.0,
+  "flip_choice": 0.39166666666666666,
+  "acc_choice": 0.25983333333333336,
+  "kl_choice": 0.0,
+  "flip_noul": 0.06166666666666667,
+  "acc_noul": 0.4875,
+  "kl_noul": 0.0,
+  "first_score": -18.142857142857142,
+  "last_score": 10.785714285714288,
+  "first_choice": 2.0000000000000018,
+  "last_choice": 1.6249999999999987,
+  "first_noul": -2.0833333333333313,
+  "last_noul": 2.083333333333337
+ },
+ "argmax_agreement_official": 0.9976056338028169,
+ "n_null": 20,
+ "cells": [
+  {
+   "K": 5,
+   "dflip_score_pp": -0.8750000000000036,
+   "dflip_ci": [
+    -1.7500000000000002,
+    -0.125
+   ],
+   "dacc_score_pp": -0.15624999999999667,
+   "dacc_ci": [
+    -0.49375,
+    0.175
+   ],
+   "null_p5": -4.625000000000002,
+   "null_mean": -0.47499999999999876,
+   "p_empirical": 0.14285714285714285,
+   "dflip_content_pp": 0.0,
+   "dflip_choice_pp": 0.3333333333333355,
+   "dflip_noul_pp": 0.4999999999999998,
+   "first_score_shift_pp": 0.35714285714285765,
+   "kl_score": 0.00041093328036367893,
+   "qualifies": false
+  },
+  {
+   "K": 20,
+   "dflip_score_pp": -0.7499999999999951,
+   "dflip_ci": [
+    -1.5,
+    0.0
+   ],
+   "dacc_score_pp": 0.06875000000000075,
+   "dacc_ci": [
+    -0.31265625,
+    0.4875
+   ],
+   "null_p5": -4.631250000000001,
+   "null_mean": -1.087499999999999,
+   "p_empirical": 0.2857142857142857,
+   "dflip_content_pp": 0.0,
+   "dflip_choice_pp": 0.5000000000000004,
+   "dflip_noul_pp": 0.4999999999999998,
+   "first_score_shift_pp": 0.6071428571428577,
+   "kl_score": 0.001224813866429031,
+   "qualifies": false
+  },
+  {
+   "K": 100,
+   "dflip_score_pp": 9.999999999999998,
+   "dflip_ci": [
+    7.375,
+    12.75
+   ],
+   "dacc_score_pp": -1.7625000000000002,
+   "dacc_ci": [
+    -3.5437499999999997,
+    0.18125000000000036
+   ],
+   "null_p5": -4.018750000000003,
+   "null_mean": -0.3624999999999984,
+   "p_empirical": 1.0,
+   "dflip_content_pp": 0.12499999999999734,
+   "dflip_choice_pp": 7.666666666666666,
+   "dflip_noul_pp": 2.333333333333334,
+   "first_score_shift_pp": 0.678571428571427,
+   "kl_score": 0.1010059043765068,
+   "qualifies": false
+  }
+ ],
+ "elapsed_s": 881.1
+}

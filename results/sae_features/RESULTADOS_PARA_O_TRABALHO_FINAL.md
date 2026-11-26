@@ -20,6 +20,8 @@ a classe mais comum de cada pergunta (48%) e pouco acima do acaso (32%). **A inf
 
 **Em uma linha para o resumo do trabalho:** o Laya sabe mais do que diz (a resposta é legível linearmente nas camadas intermediárias), e o erro vem de uma leitura final enviesada por preferências de prior espalhadas em muitas features, não de poucas "features do erro".
 
+**Resultado causal (§10):** em `score`, remover o sinal de posição dos marcadores da camada 22 (ou da 14) reduz a sensibilidade em cerca de 20% sem perder acurácia, e zerar só 5 a 20 features do SAE de `enc_17` a reduz em ~10 p.p.; a posição é legível em todas as camadas.
+
 **Duas correções importantes depois da rotação das opções (§8 e §9):** (i) com a ordem das opções balanceada, a acurácia do Laya (0,334) fica indistinguível do acaso (0,318), então o "Laya acerta um pouco acima do acaso" depende da ordem original; (ii) o ranking de features individuais **depende da semente do SAE** (só ~50% das features têm correspondente); só o efeito agregado da ablação se repete.
 
 ---
@@ -53,7 +55,7 @@ O **controle** é o mesmo probe treinado com os gabaritos embaralhados entre cas
 - **Forma da curva:** sobe rápido até a camada ~3 (0,54) e fica num patamar de ~0,55–0,58 da camada 8 até a normalização final; nas duas camadas da cabeça de decisão cai para 0,52 e 0,51. A camada 19 tem o maior teste (0,583), mas foi o dev que escolheu a 17 (empate com a 12); a diferença é ruído.
 - A camada `emb` (0,27) é só piso de sanidade: lá todos os marcadores são o mesmo vetor.
 - **Ressalva obrigatória:** o probe é treinado com dados do próprio benchmark e o Laya é zero-shot. "Probe > Laya" mostra que a informação é legível linearmente, não que o Laya "deveria" acertar sem esses dados.
-- **Ressalva da rotação (§8):** o probe foi treinado e testado na ordem original das opções. Com as opções rotacionadas, o da camada 8 cai de 0,50 para 0,27 (perto do acaso), então nessa camada ele depende da ordem; o da camada 17 cai de 0,52 para 0,42, que ainda é bem acima do acaso (~0,24) e do Laya: aí há conteúdo legível. **O 0,574 não deve ser apresentado como "conteúdo puro".**
+- **Ressalva da rotação (§8):** o probe foi treinado e testado na ordem original das opções. Com as opções rotacionadas, o da camada 8 cai de 0,50 para 0,27 (perto do acaso), então nessa camada ele depende da ordem; o da camada 17 cai de 0,52 para 0,42, que ainda é bem acima do acaso (~0,24) e do Laya: aí há conteúdo legível. **O 0,574 não deve ser apresentado como "conteúdo puro"** (o probe se apoia na posição), **mas a informação de conteúdo está na representação**: uma sonda treinada com a posição descorrelacionada chega a 0,559 (§10).
 - **Prior com três valores:** o enunciado original citava 0,461; pela definição usada (resposta mais frequente por workflow e pergunta no treino) o valor é 0,483 no teste e 0,510 no dev. Não conseguimos reproduzir 0,461; **o trabalho deve usar 0,483 e dizer qual definição usou.**
 - Fonte: `results/probe_typed/REPORT.md`, `results/probe_typed/probe_by_layer.csv`.
 
@@ -157,7 +159,23 @@ Segunda semente (mesmos hiperparâmetros). Fonte: `REPORT.md` §9.
 
 ---
 
-## 10. Par em inglês: Laya base × ajustado ao benchmark (Parte C)
+## 10. O que causa a sensibilidade à posição (os experimentos da pergunta reduzida)
+
+Pergunta: **"O que acontece por dentro dos modelos System One que causa sensibilidade à posição?"** Sensibilidade = a escolha muda quando só a ordem das opções muda. Foco em `score` (escolhido depois de ver o dado; `choice` e `noul` saem ao lado). Critérios e expectativas fixados antes de rodar (`PROTOCOLO.md`, emenda 7). Fonte: `REPORT.md` §10.
+
+| experimento | resultado (`score`, teste) |
+|---|---|
+| **Sondas lineares** por camada | A **posição** da opção é legível quase perfeitamente em todas as camadas do encoder (acurácia ~1,00; acaso 0,24), e só cai na cabeça de decisão (0,64). A identidade da opção também (1,00 desde a camada 1). Uma sonda de resposta treinada **com a posição descorrelacionada** chega a **0,559** (IC95% 0,539–0,579; Laya 0,334; acaso 0,318), indistinguível do 0,574 da etapa 3: o conteúdo está na representação. |
+| **Remover o subespaço de posição** dos marcadores, numa camada | **Camada 22: a taxa de troca cai de 0,829 para 0,665 (−16,4 p.p., ~20%)**, sem perder acurácia (+1,6 p.p.), e o controle de conteúdo não mexe (−0,5). A aversão à primeira opção some (de −18 para +4 p.p.). **Camada 14: −17,9 p.p.** (um pouco menos específico). Camada 8: −3,3 p.p. Camada 17: −13,2 p.p., mas a acurácia cai 3,2 p.p. (não qualifica). Camadas 1–6 e 10: remover só perturba. |
+| **Zerar as features do SAE de maior η² de posição** | `enc_17`: **5 ou 20 features reduzem a troca em ~10 p.p.** com acurácia intacta (−0,6 p.p.) e controle de conteúdo em zero. `enc_08`: nenhum efeito. |
+
+**Leitura:** a sensibilidade à posição do `score` tem uma causa interna localizada: o sinal de posição que existe nos marcadores nas camadas médias e tardias (14 e 22) e que a cabeça de decisão lê. Ele explica cerca de **um quinto** da sensibilidade; sobram ~65% de decisões trocando, então não é a única causa.
+**Eu esperava poucos efeitos e errei** (a expectativa escrita antes de rodar dizia "nenhuma ou poucas células"); foi reportado como saiu.
+**Ressalvas:** (i) 26 células foram testadas no dev e 4 qualificaram, número que o acaso poderia produzir em 1 ou 2; três replicam no teste, que é independente. (ii) O modo "da camada L até a 22" **não soma** os efeitos (remover da 14 à 22 dá −2 p.p.), e não sei explicar. (iii) `score` é uma escala ordinal: posição e "ordem esperada da escala" não se separam por rotação. (iv) Só nos marcadores, só a semente 0 do SAE, e as camadas depois da 22 não foram testadas. (v) Nada sobre `choice`, `noul` ou os modelos em inglês.
+
+---
+
+## 11. Par em inglês: Laya base × ajustado ao benchmark (Parte C)
 
 - **Entradas idênticas** nos dois modelos (mesmos tokens e papéis); a configuração comum de comprimento (1024/256) não distorce o base (acurácia 0,3625 contra 0,3630 com a configuração própria).
 - **Acurácia:** base 0,363 no teste; **ajustado 0,7685** (o README do modelo diz 0,766). No treino e no dev o ajustado acerta ~85%, porque **foi treinado no benchmark**: só o teste vale para ele.
@@ -168,12 +186,13 @@ Segunda semente (mesmos hiperparâmetros). Fonte: `REPORT.md` §9.
 
 ---
 
-## 11. O que se pode e o que não se pode dizer
+## 12. O que se pode e o que não se pode dizer
 
 **Pode dizer (com a evidência acima):**
 - A resposta é legível linearmente nas camadas intermediárias do Laya, muito além do que o modelo entrega (57% contra 35%), e a cabeça de decisão perde parte disso.
 - O Laya tem um viés de prior forte e replicável (foge da classe mais comum; responde `true` demais), e **em `choice` ele é de conteúdo, não de posição** (§8). Em `score` há viés posicional grande (quase nunca escolhe a primeira opção).
-- A posição é codificada nas camadas 1 a 4 do encoder e o conteúdo da opção a partir da 5 (§8).
+- A posição domina a variância nas camadas 1 a 4 e o conteúdo a partir da 5 (§8), mas a posição continua **legível** (acurácia ~1,00) em todas as camadas do encoder (§10).
+- Em `score`, remover o sinal de posição dos marcadores da camada 22 ou da 14 reduz a taxa de troca em ~16 a 18 p.p. (~20%) sem perda de acurácia; é uma causa localizada, mas não a única (§10).
 - SAEs de 16× com k = 32 reconstroem bem essas camadas e são fiéis ao comportamento.
 - O erro **não** se concentra em poucas features: ablar até 100 features no marcador escolhido move a margem pouco na camada 8, e na camada 17 desloca a margem mas derruba decisões certas junto.
 - O ranking ingênuo de features por erro é enganoso porque mede a opção escolhida; é preciso estratificar.
@@ -183,7 +202,7 @@ Segunda semente (mesmos hiperparâmetros). Fonte: `REPORT.md` §9.
 - Qualquer rótulo para uma feature (nenhuma foi interpretada).
 - Que o viés de `choice` é **posicional**: o teste de rotação o descarta (máximo 3,2 p.p.). Só em `score` há viés posicional grande.
 - Que o Laya "acerta acima do acaso" quando a ordem das opções é balanceada: o IC95% da acurácia (0,317–0,353) inclui o acaso (0,318).
-- Que o 0,574 do probe é "conteúdo puro": medido só na ordem original; com rotação o da camada 17 cai para ~0,42 e o da camada 8 para ~0,27.
+- Que o probe da etapa 3 (0,574) lê só conteúdo: ele foi medido na ordem original e sob rotação cai (camada 17 para ~0,42, camada 8 para ~0,27). O que se pode dizer é que a representação carrega conteúdo suficiente para 0,559 com a posição descorrelacionada (§10).
 - Que uma feature específica "é" a do erro: o ranking de features depende da semente do SAE (§9).
 - Que o fine-tuning "corrige" features específicas: a comparação base × ajustado é descritiva e o ajustado foi treinado no benchmark.
 - Resultados de acurácia do modelo ajustado fora do teste.
@@ -192,7 +211,7 @@ Segunda semente (mesmos hiperparâmetros). Fonte: `REPORT.md` §9.
 
 ---
 
-## 12. Onde está cada coisa
+## 13. Onde está cada coisa
 
 | o quê | onde |
 |---|---|
@@ -202,6 +221,7 @@ Segunda semente (mesmos hiperparâmetros). Fonte: `REPORT.md` §9.
 | Qualidade dos SAEs | `results/sae_features/sae_quality.csv` e `sae_quality_flags_*.json` |
 | Cartões de features | `results/sae_features/feature_cards/` (campo de interpretação em branco) |
 | Ablação | `results/sae_features/ablation/<SAE>/{dev,test}/summary.json` |
+| Sondas e experimentos causais de posição | `results/sae_features/position_probes/` (CSV, resumo, figura em inglês) e `position_causal/` (subespaço `single` e `onward`, features por camada) |
 | Rotação das opções (comportamento, probe, η²) | `results/sae_features/rotation/` (`behaviour.json`, `probe_stability.json`, `eta_by_layer.csv`, `feature_eta.json`, 2 figuras) |
 | Estabilidade entre sementes | `results/sae_features/seed_stability/`, `results/sae_features/ablation/*_s1/` |
 | Par em inglês | `results/sae_features/part_c/`, `part_c_sae_ft/` |
@@ -211,11 +231,11 @@ Segunda semente (mesmos hiperparâmetros). Fonte: `REPORT.md` §9.
 
 **Para reproduzir:** `uv sync` (Python 3.14, torch 2.15, `uv.lock` versionado) e os scripts `run_*.py` na ordem listada em `.claude/CLAUDE.md` (esse arquivo não é versionado; a ordem também aparece no `REPORT.md` §9). Os jobs rodaram no cluster Sauron (GPU B200); os IDs dos jobs estão em `REPORT.md` §9.
 
-**Figuras (todas em inglês):** `results/probe_typed/acc_by_layer_en.png` (probe por camada; a `acc_by_layer.png` está em português), `results/sae_features/rotation/eta_by_layer.png` (posição × conteúdo por camada) e `results/sae_features/rotation/position_preference_choice.png` (preferência por posição em `choice` e `score`).
+**Figuras (todas em inglês):** `results/sae_features/position_probes/probes_by_layer.png` (o que as sondas leem em cada camada), `results/probe_typed/acc_by_layer_en.png` (probe por camada; a `acc_by_layer.png` está em português), `results/sae_features/rotation/eta_by_layer.png` (posição × conteúdo por camada) e `results/sae_features/rotation/position_preference_choice.png` (preferência por posição em `choice` e `score`).
 
 ---
 
-## 13. Glossário rápido
+## 14. Glossário rápido
 
 - **Probe linear:** classificador linear treinado sobre ativações congeladas de uma camada; mede o que está disponível, não o que o modelo usa.
 - **`[MASK]` de opção:** o token especial que o Laya coloca antes de cada opção; é de onde ele tira a nota daquela opção.

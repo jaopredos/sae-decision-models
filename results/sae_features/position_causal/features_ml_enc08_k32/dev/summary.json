@@ -1,0 +1,93 @@
+{
+ "experiment": "features",
+ "subset": "dev",
+ "n_decisions": 900,
+ "baseline": {
+  "flip_score": 0.8583333333333333,
+  "acc_score": 0.2727777777777778,
+  "kl_score": 0.0,
+  "flip_choice": 0.4749034749034749,
+  "acc_choice": 0.22683397683397682,
+  "kl_choice": 0.0,
+  "flip_noul": 0.05693950177935943,
+  "acc_noul": 0.4412811387900356,
+  "kl_noul": 0.0,
+  "first_score": -19.242902208201894,
+  "last_score": 9.621451104100947,
+  "first_choice": 2.932960893854747,
+  "last_choice": 2.094972067039108,
+  "first_noul": -2.491103202846973,
+  "last_noul": 2.491103202846978
+ },
+ "argmax_agreement_official": 0.9974691553305916,
+ "n_null": 20,
+ "cells": [
+  {
+   "K": 5,
+   "dflip_score_pp": -1.6666666666666607,
+   "dflip_ci": [
+    -3.0555555555555554,
+    0.0
+   ],
+   "dacc_score_pp": 0.09722222222222077,
+   "dacc_ci": [
+    -0.40277777777777785,
+    0.625
+   ],
+   "null_p5": -4.444444444444439,
+   "null_mean": -0.6249999999999989,
+   "p_empirical": 0.14285714285714285,
+   "dflip_content_pp": 0.0,
+   "dflip_choice_pp": 0.7722007722007707,
+   "dflip_noul_pp": 0.0,
+   "first_score_shift_pp": 0.6309148264984223,
+   "kl_score": 0.0004241681599523872,
+   "qualifies": false
+  },
+  {
+   "K": 20,
+   "dflip_score_pp": -0.8333333333333304,
+   "dflip_ci": [
+    -2.2222222222222223,
+    0.5555555555555556
+   ],
+   "dacc_score_pp": 0.5000000000000004,
+   "dacc_ci": [
+    -0.028125000000000008,
+    1.0972222222222223
+   ],
+   "null_p5": -4.458333333333328,
+   "null_mean": -1.3055555555555536,
+   "p_empirical": 0.2857142857142857,
+   "dflip_content_pp": 0.0,
+   "dflip_choice_pp": 0.0,
+   "dflip_noul_pp": -0.35587188612099596,
+   "first_score_shift_pp": 0.7097791798107238,
+   "kl_score": 0.001265479950234294,
+   "qualifies": false
+  },
+  {
+   "K": 100,
+   "dflip_score_pp": 8.333333333333337,
+   "dflip_ci": [
+    5.0,
+    11.666666666666666
+   ],
+   "dacc_score_pp": -1.2083333333333335,
+   "dacc_ci": [
+    -3.791666666666666,
+    1.4729166666666662
+   ],
+   "null_p5": -4.722222222222216,
+   "null_mean": -0.7499999999999951,
+   "p_empirical": 1.0,
+   "dflip_content_pp": -0.5555555555555536,
+   "dflip_choice_pp": 9.266409266409264,
+   "dflip_noul_pp": 2.135231316725979,
+   "first_score_shift_pp": 1.3406940063091497,
+   "kl_score": 0.09394260495901108,
+   "qualifies": false
+  }
+ ],
+ "elapsed_s": 405.5
+}

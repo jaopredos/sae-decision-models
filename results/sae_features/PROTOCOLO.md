@@ -297,3 +297,11 @@ A lista é escolhida só nas rotações de descoberta (casos fora do dev), entã
 
 **Reporte.** Para cada experimento: a tabela completa (todas as células, qualificando ou não), `score` em destaque e `choice`/`noul` ao lado. A paridade do argmax em lote com o `predict` oficial rotacionado deve ser ≥ 0,98; abaixo disso, parar e olhar antes de interpretar.
 **Limites já conhecidos.** O subespaço de posição vem de médias por posição (um espaço linear); a remoção só nos marcadores deixa a posição nos outros tokens; as rotações cíclicas não esgotam as permutações; em `score` os níveis são ordinais, então "posição" e "ordem esperada da escala" não se separam por rotação. Os limiares (3 p.p., 2 p.p., 90% de variância, p ≤ 0,05 com 20 nulos) são convenções minhas.
+
+**Adendo à emenda 7 (26/11/2026, depois das rodadas).** Os critérios e as expectativas acima não foram alterados. Registro:
+(1) **Resultado frente às expectativas** (tabela completa em `REPORT.md` §10.4): E1, posição legível confirmada, identidade legível desmentida na direção (1,00 desde a camada 1), critério da sonda de resposta atendido (0,559); E2, **desmentida** (as camadas 14 e 22 reduzem a troca em 16 a 18 p.p.; `onward` na 22 é a mesma intervenção que `single` na 22; o `onward` não soma); E3, confirmada em `enc_08` e **desmentida** em `enc_17` (K = 5 e 20 qualificam).
+(2) A versão curta da sonda (job 4519) processou os dados completos numa camada (`enc_08`) antes do job completo, e o número foi visto (sonda de resposta 0,532 no teste); isso não alterou o desenho nem os critérios.
+(3) **Comparações múltiplas:** 26 células no dev em E2 e 6 em E3; o critério p ≤ 0,05 tem piso 1/21 com 20 nulos. O texto reporta isso e usa a replicação no teste (sem seleção nova) como segunda barreira.
+(4) Em E3 o teste foi a avaliação primária e o dev uma segunda conferência independente, sem filtro de células (a lista de features usa só a descoberta).
+(5) Operacional: a CLI do Sauron passou a `sauron submit -f <yaml>` com `script:` no YAML (o `-c` deixou de existir); os YAMLs de posição foram atualizados. RAM medida: sondas 4,8 GiB, subespaço 4,7 GiB (`single`) e 2,4 GiB (`onward`), features 2,4 GiB.
+(6) **Não feito:** subespaços para `final_norm` e para as camadas da cabeça de decisão (o efeito se concentra no fim; análise exploratória possível, fora deste protocolo) e a semente 1 em E3.

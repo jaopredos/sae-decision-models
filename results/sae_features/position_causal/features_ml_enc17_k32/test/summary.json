@@ -1,0 +1,93 @@
+{
+ "experiment": "features",
+ "subset": "test",
+ "n_decisions": 2000,
+ "baseline": {
+  "flip_score": 0.82875,
+  "acc_score": 0.2761875,
+  "kl_score": 0.0,
+  "flip_choice": 0.39166666666666666,
+  "acc_choice": 0.25983333333333336,
+  "kl_choice": 0.0,
+  "flip_noul": 0.06166666666666667,
+  "acc_noul": 0.4875,
+  "kl_noul": 0.0,
+  "first_score": -18.142857142857142,
+  "last_score": 10.785714285714288,
+  "first_choice": 2.0000000000000018,
+  "last_choice": 1.6249999999999987,
+  "first_noul": -2.0833333333333313,
+  "last_noul": 2.083333333333337
+ },
+ "argmax_agreement_official": 0.9976056338028169,
+ "n_null": 20,
+ "cells": [
+  {
+   "K": 5,
+   "dflip_score_pp": -9.999999999999998,
+   "dflip_ci": [
+    -12.25,
+    -7.75
+   ],
+   "dacc_score_pp": -0.6624999999999992,
+   "dacc_ci": [
+    -1.60640625,
+    0.29999999999999993
+   ],
+   "null_p5": -0.2562499999999951,
+   "null_mean": 0.5875000000000017,
+   "p_empirical": 0.047619047619047616,
+   "dflip_content_pp": 0.0,
+   "dflip_choice_pp": 0.16666666666666496,
+   "dflip_noul_pp": 0.33333333333333337,
+   "first_score_shift_pp": 4.9642857142857135,
+   "kl_score": 0.013840703293681145,
+   "qualifies": true
+  },
+  {
+   "K": 20,
+   "dflip_score_pp": -10.875000000000002,
+   "dflip_ci": [
+    -13.25,
+    -8.625
+   ],
+   "dacc_score_pp": -0.6187499999999957,
+   "dacc_ci": [
+    -1.6126562500000001,
+    0.33812499999999945
+   ],
+   "null_p5": -0.381250000000003,
+   "null_mean": 0.475000000000001,
+   "p_empirical": 0.047619047619047616,
+   "dflip_content_pp": 0.0,
+   "dflip_choice_pp": 0.16666666666666496,
+   "dflip_noul_pp": 0.33333333333333337,
+   "first_score_shift_pp": 5.392857142857142,
+   "kl_score": 0.017056765034794807,
+   "qualifies": true
+  },
+  {
+   "K": 100,
+   "dflip_score_pp": -6.6250000000000036,
+   "dflip_ci": [
+    -9.125,
+    -4.121875000000004
+   ],
+   "dacc_score_pp": -1.9124999999999948,
+   "dacc_ci": [
+    -3.175,
+    -0.7435937500000003
+   ],
+   "null_p5": -0.6312499999999976,
+   "null_mean": 2.462500000000001,
+   "p_empirical": 0.047619047619047616,
+   "dflip_content_pp": 3.875000000000006,
+   "dflip_choice_pp": 2.3333333333333317,
+   "dflip_noul_pp": 0.4999999999999998,
+   "first_score_shift_pp": 4.2142857142857135,
+   "kl_score": 0.04887821525335312,
+   "qualifies": false
+  }
+ ],
+ "elapsed_s": 872.0
+}
