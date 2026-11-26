@@ -1,0 +1,18 @@
+# Rotação das opções no Laya base e ajustado em inglês, só comportamento, e comparação (emenda 8, E6).
+#
+#   sauron submit -f scripts/sauron/jobs/rotation-en.yaml
+
+name: rotation-en
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# 1ª ESTIMATIVA (nenhuma medida ainda): extração só do comportamento no teste, modelos de 1024 de largura; a extração de rotações multilíngue sem vetores teria pico bem abaixo dos 12 GiB do job 4173. 8g.
+memory: 8g
+cpus: 4
+max_time: 1h
+
+workspace: sae-decision-models
+
+env:
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"
+script: ../rotation_en.sauron

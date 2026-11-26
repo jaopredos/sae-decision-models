@@ -1,0 +1,18 @@
+# Subespaço de posição depois da camada 22 e combinações de camadas (emenda 8, E4).
+#
+#   sauron submit -f scripts/sauron/jobs/position-tail.yaml
+
+name: position-tail
+image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
+gpus: 1
+vram: 89
+# Medido nos jobs 4582/4583 (mesma carga): pico 4,7 GiB na estimativa dos subespaços; aqui só 7 camadas estimadas, 7g por segurança. Duração estimada 40 min (estimativa, 8 células x 22 condições).
+memory: 7g
+cpus: 4
+max_time: 2h
+
+workspace: sae-decision-models
+
+env:
+  PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"
+script: ../position_tail.sauron

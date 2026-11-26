@@ -1,0 +1,19 @@
+# Emenda 8, E4: subespaço de posição depois da camada 22 (final_norm, cabeça) e combinações de camadas. Dev e, depois, só as células que qualificaram.
+#
+#   sauron submit -f scripts/sauron/jobs/position-tail.yaml
+#
+# LIMIT > 0 (versão curta): poucas células e saída em position_causal_short.
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+CELLS="23:single,24:single,25:single,22:tail,23:tail,14+22:set,17+22:set,14+17+22:set"
+LIMIT="${LIMIT:-0}"
+OUT=results/sae_features/position_causal
+if (( LIMIT > 0 )); then OUT=results/sae_features/position_causal_short; CELLS="${SHORT_CELLS:-23:single,14+22:set}"; fi
+for SUBSET in dev test; do
+    uv run --frozen python run_position_causal.py --exp subspace --subset "${SUBSET}" --cells "${CELLS}" --tag subspace_tail_sets \
+        --limit "${LIMIT}" ${N_NULL:+--n-null "${N_NULL}"} --device cuda --out "${OUT}"
+done

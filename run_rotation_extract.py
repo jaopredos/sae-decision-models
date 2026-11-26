@@ -37,7 +37,7 @@ def rotation(k: int, r: int) -> list:
 
 
 @torch.no_grad()
-def rotated_call(agent, modules, case, r):
+def rotated_call(agent, modules, case, r, pk=None, vectors=True):
     """Run one (case, r); returns per-decision records and marker vectors per layer, or None if no question has > r options."""
     questions = {}
     for qid, q in case["questions"].items():
@@ -47,13 +47,13 @@ def rotated_call(agent, modules, case, r):
     if not questions:
         return None
     with capture(agent, modules) as cap:
-        ans = agent.predict(case["state"], questions)["answers"]
+        ans = agent.predict(case["state"], questions, **(pk or {}))["answers"]
     assert len(cap.forward_calls) == 1 and len(cap.encode_calls) == 1
     ids, internal, items = cap.encode_calls[0]
     marker_pos = cap.forward_calls[0][0][2]
     recs, vec = [], {label: [] for label, _ in modules}
     gathered = {}
-    for label, _ in modules:
+    for label, _ in modules if vectors else []:
         h = cap.outputs[label]
         idx = marker_pos.clamp(min=0)[:, :, None].expand(-1, -1, h.size(-1))
         gathered[label] = torch.gather(h, 1, idx).float().cpu()
@@ -69,9 +69,9 @@ def rotated_call(agent, modules, case, r):
                      "option_ids": opts, "order": order, "probs": p.tolist(), "pred_idx": pred_idx, "pred_slot": order.index(pred_idx),
                      "gold_idx": gold_idx, "gold_slot": order.index(gold_idx)})
         assert len(items[j]["markers"]) == k
-        for label in vec:
+        for label in vec if vectors else []:
             vec[label].append(gathered[label][j, :k].numpy().astype(np.float16))
-    return recs, {label: np.concatenate(v) for label, v in vec.items()}
+    return recs, {label: np.concatenate(v) for label, v in vec.items()} if vectors else {}
 
 
 def main():
@@ -80,7 +80,16 @@ def main():
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--device", default=None)
     ap.add_argument("--out", default=str(REPO_ROOT / "data" / "activations" / "rotation"))
+    # other checkpoints and a common input configuration (as run_extract.py); defaults keep the multilingual extraction unchanged
+    ap.add_argument("--repo", default=LAYA_REPO)
+    ap.add_argument("--subfolder", default=LAYA_SUBFOLDER)
+    ap.add_argument("--revision", default=LAYA_REVISION)
+    ap.add_argument("--max-len", type=int, default=0)
+    ap.add_argument("--head-max-len", type=int, default=0)
+    ap.add_argument("--no-vectors", action="store_true", help="behaviour only: no marker vectors are gathered or saved")
     args = ap.parse_args()
+    subfolder = None if args.subfolder in ("", "none", "None") else args.subfolder
+    pk = {k: v for k, v in (("max_len", args.max_len), ("head_max_len", args.head_max_len)) if v}
     set_all_seeds()
     out = Path(args.out) / args.split
     out.mkdir(parents=True, exist_ok=True)
@@ -88,12 +97,12 @@ def main():
     if args.limit:
         cases = cases[: args.limit]
     dev_ids = typed_dev_ids() if args.split == "train" else set()
-    agent = load_agent(args.device, LAYA_REPO, LAYA_SUBFOLDER, LAYA_REVISION)
+    agent = load_agent(args.device, args.repo, subfolder, args.revision)
     modules = layer_modules(agent.model)
     rows, markers, vecs, t0 = [], [], {label: [] for label, _ in modules}, time.time()
     for n, case in enumerate(cases, 1):
         for r in range(5):
-            res = rotated_call(agent, modules, case, r)
+            res = rotated_call(agent, modules, case, r, pk, vectors=not args.no_vectors)
             if res is None:
                 continue
             recs, v = res
@@ -103,7 +112,7 @@ def main():
                 rows.append(rec)
                 for slot, opt in enumerate(rec["order"]):
                     markers.append((row_idx, slot, opt))
-            for label in vecs:
+            for label in v:
                 vecs[label].append(v[label])
         if n % 100 == 0 or n == len(cases):
             print(f"[rot] {n}/{len(cases)} cases, {len(rows)} rows, {time.time() - t0:.0f}s", flush=True)
@@ -111,7 +120,7 @@ def main():
     df.to_parquet(out / "rows.parquet")
     mk = pd.DataFrame(markers, columns=["row_idx", "slot", "opt_idx"])
     mk.to_parquet(out / "markers.parquet")
-    for i, (label, _) in enumerate(modules):
+    for i, (label, _) in enumerate(modules if not args.no_vectors else []):
         arr = np.concatenate(vecs[label])
         assert arr.shape[0] == len(mk), (label, arr.shape, len(mk))
         np.save(out / f"L{i:02d}_{label}.npy", arr)
@@ -122,6 +131,7 @@ def main():
             "acc_rot0": float((df[df.rot == 0].pred_idx == df[df.rot == 0].gold_idx).mean()),
             "acc_all_rotations": float((df.pred_idx == df.gold_idx).mean()),
             "versions": {"python": platform.python_version(), "torch": torch.__version__, "laya": laya.__version__, "transformers": transformers.__version__},
+            "repo": args.repo, "subfolder": subfolder, "revision": args.revision, "predict_kwargs": pk, "vectors": not args.no_vectors,
             "device": str(agent.device), "elapsed_s": round(time.time() - t0, 1)}
     (out / "meta.json").write_text(json.dumps(meta, indent=2))
     print("[rot] done", json.dumps({k: meta[k] for k in ("n_rows", "n_markers", "acc_rot0", "acc_all_rotations", "elapsed_s")}), flush=True)

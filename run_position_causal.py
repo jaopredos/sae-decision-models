@@ -152,19 +152,32 @@ def layer_vectors(rot_dir: Path, label: str):
     return np.load(next((rot_dir / "train").glob(f"L*_{label}.npy")))
 
 
+def lab(l: int) -> str:
+    """Layer index -> label: 1-22 backbone, 23 final norm, 24-25 decision-head layers."""
+    return f"enc_{l:02d}" if l <= 22 else {23: "enc_final", 24: "head_1", 25: "head_2"}[l]
+
+
+def span_of(layer, mode) -> list:
+    """Layers edited by a cell: `single` the layer itself, `onward` L..22, `tail` L..25, `set` an explicit 'a+b+c' list."""
+    if mode == "set":
+        return [int(x) for x in str(layer).split("+")]
+    L = int(layer)
+    return list(range(L, 23)) if mode == "onward" else list(range(L, 26)) if mode == "tail" else [L]
+
+
 def estimate_subspaces(rot_dir: Path, layers, energy: float, out: Path):
     f = out / "subspaces.npz"
-    if f.exists():
-        z = np.load(f)
-        return {k: z[k] for k in z.files}
+    res = {k: v for k, v in np.load(f).items()} if f.exists() else {}
+    layers = [L for L in layers if f"pos_{L}" not in res]
+    if not layers:
+        return res
     keep, grp, slot, opt = discovery_markers(rot_dir)
-    res = {}
     for L in layers:
-        X = layer_vectors(rot_dir, f"enc_{L:02d}")[keep]
+        X = layer_vectors(rot_dir, lab(L))[keep]
         for name, cls in (("pos", slot), ("cont", opt)):
             U, r, expl = between_class_directions(X, grp[keep], cls[keep], energy)
             res[f"{name}_{L}"], res[f"expl_{name}_{L}"] = U, expl
-        print(f"[pos] enc_{L:02d}: position dims {res[f'pos_{L}'].shape[1]} content dims {res[f'cont_{L}'].shape[1]}", flush=True)
+        print(f"[pos] {lab(L)}: position dims {res[f'pos_{L}'].shape[1]} content dims {res[f'cont_{L}'].shape[1]}", flush=True)
     np.savez_compressed(f, **res)
     return res
 
@@ -237,6 +250,8 @@ def main():
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--layers", default=",".join(map(str, DEFAULT_LAYERS)))
     ap.add_argument("--modes", default="single,onward")
+    ap.add_argument("--cells", default="", help="explicit cells 'layer:mode,...' (mode single|onward|tail|set; a set is 'a+b+c:set'); default = layers x modes")
+    ap.add_argument("--tag", default="", help="output folder name; default derives from --modes")
     ap.add_argument("--n-null", type=int, default=20)
     ap.add_argument("--energy", type=float, default=0.9)
     ap.add_argument("--sae", default=None)
@@ -249,7 +264,7 @@ def main():
     args = ap.parse_args()
     set_all_seeds()
     rot_dir = Path(args.rot_dir)
-    name = f"subspace_{args.modes.replace(',', '_')}" if args.exp == "subspace" else f"{args.exp}_{args.sae}"
+    name = args.tag or (f"subspace_{args.modes.replace(',', '_')}" if args.exp == "subspace" else f"{args.exp}_{args.sae}")
     out = Path(args.out) / name
     (out / args.subset).mkdir(parents=True, exist_ok=True)
     layers = [int(x) for x in args.layers.split(",")]
@@ -277,18 +292,20 @@ def main():
 
     if args.exp == "subspace":
         cell_cols = ["layer", "mode"]
-        modes = args.modes.split(",")
-        sub = estimate_subspaces(rot_dir, list(range(1, 23)), args.energy, out)
-        cells = [(L, m) for L in layers for m in modes]
+        if args.cells:  # layers kept as text so a set like '14+22' and plain layers sort together
+            cells = [tuple(spec.split(":")) for spec in args.cells.split(",")]
+        else:
+            cells = [(L, m) for L in layers for m in args.modes.split(",")]
         if args.subset == "test":  # no new selection: only the cells that qualified on dev
             dev_sum = json.loads((out / "dev" / "summary.json").read_text())
             cells = [(c["layer"], c["mode"]) for c in dev_sum["cells"] if c["qualifies"]]
             print(f"[pos] test re-runs the {len(cells)} cells that qualified on dev: {cells}", flush=True)
+        sub = estimate_subspaces(rot_dir, sorted({l for L, m in cells for l in span_of(L, m)}), args.energy, out)
         for n, (L, mode) in enumerate(cells, 1):
-            span = range(L, 23) if mode == "onward" else [L]
+            span = span_of(L, mode)
 
             def ctx(Us):
-                return [ProjectOut(mods[f"enc_{l:02d}"], Us[l], runner.marker_mask) for l in span]
+                return [ProjectOut(mods[lab(l)], Us[l], runner.marker_mask) for l in span]
             run((L, mode), "pos", ctx({l: sub[f"pos_{l}"] for l in span}), keep=True)
             run((L, mode), "cont", ctx({l: sub[f"cont_{l}"] for l in span}))
             for i in range(args.n_null):

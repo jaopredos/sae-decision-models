@@ -1,0 +1,24 @@
+# Emenda 8, E6: rotação das opções no Laya base e no ajustado (inglês), só comportamento (sem vetores), teste, e comparação com o multilíngue.
+#
+#   sauron submit -f scripts/sauron/jobs/rotation-en.yaml
+#
+# LIMIT > 0 (versão curta): só N casos, saída em data/activations/rotation_en_smoke.
+
+set -euo pipefail
+
+source .env 2>/dev/null || true
+source scripts/sauron/uv_env.sh
+
+REPO=convaiinnovations/laya
+REV=e333cb7c823cd1787276228260f56d02fbf5180b
+LIMIT="${LIMIT:-0}"
+OUT=data/activations/rotation_en
+(( LIMIT > 0 )) && OUT=data/activations/rotation_en_smoke
+for item in "base none" "ft typed-decisions"; do
+    set -- ${item}
+    uv run --frozen python run_rotation_extract.py --split test --limit "${LIMIT}" --no-vectors --device cuda \
+        --repo "${REPO}" --subfolder "$2" --revision "${REV}" --max-len 1024 --head-max-len 256 --out "${OUT}/$1"
+done
+(( LIMIT > 0 )) && exit 0
+uv run --frozen python run_rotation_compare.py --out results/sae_features/rotation_compare \
+    --dirs multilingual=data/activations/rotation/test base_en=${OUT}/base/test ft_en=${OUT}/ft/test
