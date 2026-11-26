@@ -26,15 +26,25 @@ def summarize(records):
     return m,f,support
 
 
-def rank_and_match(records,k,n_controls,min_cases,seed):
+def rank_and_match(records,k,n_controls,min_cases,seed,sae=None):
     m,f,s=summarize(records)
     pool=np.where(s>=min_cases)[0]
     if len(pool)<k*(n_controls+1):raise ValueError('insufficient supported features for disjoint controls')
     selected=sorted(pool,key=lambda i:(-m[i],int(i)))[:k]
+    dose=None
+    if sae is not None:
+        # Proxy using mean |Δz| and decoder norm; exact set-level hidden dose is
+        # checked in the inference pilot and reported per decision.
+        decoder_norm=sae.W_dec.detach().cpu().norm(dim=1).numpy()/float(sae.scale)
+        dose=m[pool]*decoder_norm[pool]
     # Frequency and mean change per active token: magnitude matching does not use logits.
-    values=np.column_stack((np.log(f.clip(1e-12)),np.log((m/f.clip(1e-12)).clip(1e-12))))
-    bins=np.zeros((len(m),2),int)
-    for j in range(2):bins[:,j]=np.searchsorted(np.quantile(values[pool,j],[.2,.4,.6,.8]),values[:,j],side='right')
+    if dose is not None:
+        dose_all=np.ones(len(m));dose_all[pool]=dose
+        values=np.column_stack((np.log(f.clip(1e-12)),np.log((m/f.clip(1e-12)).clip(1e-12)),np.log(dose_all.clip(1e-12))))
+    else:
+        values=np.column_stack((np.log(f.clip(1e-12)),np.log((m/f.clip(1e-12)).clip(1e-12))))
+    bins=np.zeros((len(m),values.shape[1]),int)
+    for j in range(values.shape[1]):bins[:,j]=np.searchsorted(np.quantile(values[pool,j],[.2,.4,.6,.8]),values[:,j],side='right')
     scale=values[pool].std(0).clip(.1)
     rng=np.random.default_rng(seed);available=set(pool)-set(selected);controls=[];balance=[]
     for repeat in range(n_controls):
@@ -48,7 +58,7 @@ def rank_and_match(records,k,n_controls,min_cases,seed):
             # Random among the 8 closest available matches; frozen seed.
             nearest=choices[np.argsort(distance[choices],kind='stable')[:8]]
             pick=int(rng.choice(nearest));feature=int(candidates[pick]);available.remove(feature);chosen.append(feature)
-            balance.append(dict(repeat=repeat,selected=int(target),control=feature,same_quintiles=not fallback,
+            balance.append(dict(repeat=repeat,selected=int(target),control=feature,same_quintiles=not fallback,selected_decoder_dose=float(dose[np.where(pool==target)[0][0]]) if dose is not None else None,control_decoder_dose=float(dose[np.where(pool==feature)[0][0]]) if dose is not None else None,
                 standardized_log_distance=float(distance[pick]),selected_frequency=float(f[target]),control_frequency=float(f[feature]),
                 selected_mean_abs_delta=float(m[target]),control_mean_abs_delta=float(m[feature])))
         controls.append(chosen)
@@ -57,7 +67,7 @@ def rank_and_match(records,k,n_controls,min_cases,seed):
         frequency=f,case_support=s,rank=pd.Series(-m).rank(method='first').astype(int)))
 
 
-def build(root,out,k=32,n_controls=8,min_cases=20):
+def build(root,out,k=32,n_controls=8,min_cases=20,sae=None):
     manifest,data=load(root);data=[d for d in data if d['layer']=='enc_17']
     byworkflow={}
     for d in data:byworkflow.setdefault(d['workflow'],set()).add(d['case_id'])
@@ -67,11 +77,11 @@ def build(root,out,k=32,n_controls=8,min_cases=20):
     selections={};ranks=[];balances=[]
     for fold in range(4):
         training=[d for d in data if folds[d['case_id']]!=fold]
-        sel,table=rank_and_match(training,k,n_controls,min_cases,stable_seed('sae-matched-v1',fold))
+        sel,table=rank_and_match(training,k,n_controls,min_cases,stable_seed('sae-matched-v2',fold),sae)
         sel['evaluation_case_ids']=sorted(c for c,f in folds.items() if f==fold)
         selections[str(fold)]=sel;table['fold']=fold;ranks.append(table)
         balances.extend(dict(fold=fold,**b) for b in sel['balance'])
-    final,table=rank_and_match(data,k,n_controls,min_cases,stable_seed('sae-matched-v1','all'))
+    final,table=rank_and_match(data,k,n_controls,min_cases,stable_seed('sae-matched-v2','all'),sae)
     table['fold']='all';ranks.append(table)
     balances.extend(dict(fold='all',**b) for b in final['balance'])
     output=dict(protocol='docs/position-sae-mechanism/FEATURE_PROTOCOL.md',k=k,n_controls=n_controls,min_cases=min_cases,
@@ -87,11 +97,15 @@ def build(root,out,k=32,n_controls=8,min_cases=20):
         for j in range(i):overlaps.append(dict(fold_a=i,fold_b=j,jaccard=len(sets[i]&sets[j])/len(sets[i]|sets[j])))
     atomic_json(out/'selection_audit.json',dict(k=k,fold_counts=pd.Series(folds).value_counts().sort_index().tolist(),
         fallback_matches=sum(not b['same_quintiles'] for b in balances),matches=len(balances),fold_overlap=overlaps,
-        note='Matching quality must be reported; candidate selection does not establish position selectivity.'))
+        note='Single-feature decoder dose is only a proxy; report and require set-level hidden norm balance in the pilot. Candidate selection does not establish position selectivity.'))
 
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--input',type=Path,required=True);ap.add_argument('--out',type=Path,required=True)
-    a=ap.parse_args();build(a.input,a.out)
+    ap.add_argument('--weights',type=Path,required=True)
+    a=ap.parse_args()
+    from run_position_sae import checked_sae
+    sae,_=checked_sae(a.weights,'ml_enc17_k32','cpu')
+    build(a.input,a.out,sae=sae)
 
 if __name__=='__main__':main()

@@ -113,3 +113,21 @@ reutilizados sem instalar ou sincronizar. GPU job isolado, 8 GB RAM e VRAM míni
 Manifestos incluem seleção, código, pesos/revisões e protocolo; arquivos atômicos
 por decisão, hashes finais e cópia externa verificada. Nenhum arquivo de job ativo
 é alterado; cada rodada usa diretório novo.
+## Emenda v1.1 — dose dos controles (antes do piloto corrigido)
+
+O job4511 mostrou que matching em frequência e |Δz| não equilibrou a norma hidden:
+selected norm 123–184; conjuntos matched 14–44. Portanto as comparações only-
+selected versus matched do piloto anterior não identificam especificidade.
+
+As novas listas permanecem determinadas pelo mesmo ranking de |Δz|. O matching
+adiciona o proxy por feature `mean(|Δz|) × ||W_dec_i||/scale`, em três dimensões
+(frequência, |Δz| por ativa e proxy de norma). Isso não estima a dose conjunta porque
+as direções do decoder podem cancelar. A etapa causal reportará a norma hidden exata
+por conjunto/caso/direção. O piloto corrigido só passa se a razão de norma selected /
+matched ficar entre 0,8 e 1,25 para cada caso/direção e pelo menos 7/8 controles.
+Caso contrário, ajustar apenas a regra de matching para buscar conjuntos disjuntos
+com dose agregada pareada, registrar novo adendo e repetir piloto; não observar teste.
+
+O piloto anterior fica preservado como diagnóstico do desequilíbrio, sem ser usado
+para escolher as features. A nova seleção é salva em `features_v2/selection.json`,
+semente sae-matched-v2. Nenhuma lista usa logits, gradientes, gabarito, erro ou flip.

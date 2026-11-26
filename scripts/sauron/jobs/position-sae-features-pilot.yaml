@@ -1,4 +1,4 @@
-name: position-sae-features-pilot
+name: position-sae-features-pilot-v2
 image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
 gpus: 1
 vram: 8

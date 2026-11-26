@@ -41,9 +41,11 @@ def collect(runner,sae,case,qid,selection,reference,n_null=4):
             eligible_delta=torch.zeros_like(all_delta);eligible_delta[mask]=(donor['states']['enc_17']-recipient['states']['enc_17'])[mask]
             variants={'self':torch.zeros_like(all_delta),'all_features':all_delta,'eligible_activation':eligible_delta}
             expected={'self':0.,'all_features':float(first_order.sum()),'eligible_activation':float((gradient*eligible_delta).sum())}
+            set_doses={}
             for label,indices in sets.items():
                 delta=torch.zeros_like(all_delta)
                 delta[physical_eligible]=feature_delta(sae,zd[latent_rows],zr[latent_rows],indices)
+                set_doses[label]=float(delta.norm())
                 variants[f'only_{label}']=delta;variants[f'drop_{label}']=all_delta-delta
                 predicted=float(first_order[indices].sum())
                 expected[f'only_{label}']=predicted;expected[f'drop_{label}']=float(first_order.sum())-predicted
@@ -70,7 +72,7 @@ def collect(runner,sae,case,qid,selection,reference,n_null=4):
                 records.append(dict(condition=label,donor_order=donor['order'],recipient_order=recipient['order'],
                     donor_logits=donor['logits'],recipient_logits=recipient['logits'],patched_logits=result['logits'],
                     recipient_probabilities=recipient['probabilities'],patched_probabilities=result['probabilities'],
-                    delta_norm=float(delta.norm()),eligible_tokens=int(mask.sum()),
+                    delta_norm=float(delta.norm()),eligible_tokens=int(mask.sum()),selected_set_dose=set_doses.get('selected'),matched_set_dose=set_doses.get(label.replace('only_','').replace('drop_','')),
                     predicted_numerator=expected.get(label,0.),**effect_metrics(donor['logits'],recipient['logits'],result['logits'])))
             union=sorted(set(i for indices in sets.values() for i in indices))
             predictions.append(dict(donor_order=donor['order'],features=union,predicted_numerator=first_order[union].tolist()))
@@ -87,7 +89,7 @@ def collect(runner,sae,case,qid,selection,reference,n_null=4):
                         donor_value=float(zd[latent_rows[index],feature]),recipient_value=float(zr[latent_rows[index],feature])))
     return dict(case_id=case['case_id'],qid=qid,workflow=case['workflow'],option_ids=a['ids'],gold=case['gold'][qid],
         controls=checks,patches=records,feature_predictions=predictions,examples=examples,
-        selected=selection['selected'],matched_sets=selection['controls'])
+        selected=selection['selected'],matched_sets=selection['controls'],set_doses=set_doses)
 
 
 def main():

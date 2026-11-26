@@ -99,7 +99,7 @@ def collect(runner,sae,layer,case,qid,n_null,reference):
                 fidelity.append(dict(group=group,order=order,stratum=stratum,total=len(idx),eligible=len(good),
                     **moments(snap['states'][layer][token_idx],recon[latent_idx])))
         dz=p['donor_latents'][loc]-p['recipient_latents'][loc]
-        features.append(dict(group=group,token_count=len(good),
+        features.append(dict(group=group,eligible_mask=e.tolist(),delta_latents=dz.tolist(),token_count=len(good),
             sum_abs_delta=dz.abs().sum(0).tolist(),sum_delta=dz.sum(0).tolist(),
             active_count=((p['donor_latents'][loc]>0)|(p['recipient_latents'][loc]>0)).sum(0).tolist(),
             delta_sse=float((delta-dr).square().sum()),delta_sqnorm=float(delta.square().sum()),
