@@ -6,8 +6,8 @@ name: position-tail
 image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
 gpus: 1
 vram: 89
-# Medido nos jobs 4582/4583 (mesma carga): pico 4,7 GiB na estimativa dos subespaços; aqui só 7 camadas estimadas, 7g por segurança. Duração estimada 40 min (estimativa, 8 células x 22 condições).
-memory: 7g
+# Medido (job 4621): pico 2,5 GiB; 2,5 / 0,7 = 3,6 -> 4g. Duração 33 min (dev 15 min, teste 17 min).
+memory: 4g
 cpus: 4
 max_time: 2h
 

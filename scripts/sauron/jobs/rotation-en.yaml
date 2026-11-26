@@ -6,8 +6,8 @@ name: rotation-en
 image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
 gpus: 1
 vram: 89
-# 1ª ESTIMATIVA (nenhuma medida ainda): extração só do comportamento no teste, modelos de 1024 de largura; a extração de rotações multilíngue sem vetores teria pico bem abaixo dos 12 GiB do job 4173. 8g.
-memory: 8g
+# Medido (job 4622): pico 4,0 GiB; 4,0 / 0,7 = 5,7 -> 6g. Duração 4 min.
+memory: 6g
 cpus: 4
 max_time: 1h
 

@@ -39,7 +39,7 @@ def main():
     first = named[0][0]
     for n, _ in named[1:]:
         d = {}
-        both = fl[first].join(fl[n], lsuffix="_a", rsuffix="_b", how="inner")
+        both = fl[first].add_suffix("_a").join(fl[n].add_suffix("_b"), how="inner")
         for t in ("score", "choice", "noul"):
             x = both[both.qtype_a == t]
             m, ci = case_boot(x["case_id_a"].to_numpy(), (x["flip_b"] - x["flip_a"]).to_numpy(), np.ones(len(x)))

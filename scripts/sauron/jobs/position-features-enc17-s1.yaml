@@ -6,7 +6,7 @@ name: position-features-enc17-s1
 image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
 gpus: 1
 vram: 89
-# Medido no job 4585 (mesma carga): pico 2,4 GiB; 4g.
+# Medido (job 4623): pico 2,4 GiB; 2,4 / 0,7 = 3,4 -> 4g. Duração 22 min.
 memory: 4g
 cpus: 4
 max_time: 1h
