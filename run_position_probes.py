@@ -100,6 +100,39 @@ def answer_acc(probs, rows):
     return {t: float(acc[qt == t].mean()) for t in ("score", "choice", "noul")} | {"all": float(acc.mean())}, acc, rows["case_id"].to_numpy()[first], qt
 
 
+def figure(df: pd.DataFrame, path: Path, laya_acc: dict):
+    """Slot / content decodability and rotation-trained answer accuracy by layer (test split), English labels."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    blue, orange, ink, grid = "#2a78d6", "#eb6834", "#0b0b0b", "#e4e3df"
+    t = df[df.split == "test"]
+    layers = list(dict.fromkeys(t.layer))
+    x = np.arange(len(layers))
+    lab = [l.replace("enc_", "").replace("final", "norm").replace("head_", "h") for l in layers]
+    fig, axes = plt.subplots(1, 2, figsize=(10, 3.6), dpi=150)
+    ax = axes[0]
+    for task, col, name in (("slot", blue, "slot of the option"), ("content", orange, "identity of the option")):
+        d = t[(t.task == task) & (t.qtype == "score")].set_index("layer").acc.reindex(layers)
+        ax.plot(x, d, color=col, marker="o", ms=3, lw=2, label=name)
+    ax.axhline(0.25, color=ink, lw=1, ls="--"); ax.text(len(x) - 1, 0.27, "chance", ha="right", fontsize=8)
+    ax.set_title("What a linear classifier reads from one marker vector (score)", fontsize=9)
+    ax.set_ylabel("test accuracy"); ax.set_ylim(0, 1.05)
+    ax = axes[1]
+    for qt, col, name in (("all", blue, "all question types"), ("score", orange, "score only")):
+        d = t[(t.task == "answer") & (t.qtype == qt)].set_index("layer").acc.reindex(layers)
+        ax.plot(x, d, color=col, marker="o", ms=3, lw=2, label=name)
+        ax.axhline(laya_acc[qt], color=col, lw=1, ls=":")
+    ax.text(0, laya_acc["all"] + 0.01, "Laya, balanced order", fontsize=8)
+    ax.set_title("Answer probe trained on all rotations", fontsize=9); ax.set_ylim(0.2, 0.65)
+    for ax in axes:
+        ax.set_xticks(x); ax.set_xticklabels(lab, fontsize=6.5); ax.set_xlabel("layer (backbone 01-22, final norm, decision head h1-h2)", fontsize=8)
+        ax.grid(axis="y", color=grid); ax.legend(frameon=False, fontsize=8, loc="lower left")
+        for sp in ("top", "right"):
+            ax.spines[sp].set_visible(False)
+    fig.tight_layout(); fig.savefig(path); plt.close(fig)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--rot-dir", default=str(REPO_ROOT / "data" / "activations" / "rotation"))
@@ -142,6 +175,7 @@ def main():
         print(f"[probes] {label} done", flush=True)
     df = pd.DataFrame(res)
     df.to_csv(out / "probes_by_layer.csv", index=False)
+    figure(df, out / "probes_by_layer.png", {"all": 0.334, "score": 0.276})  # Laya mean over rotations, test (REPORT.md sec. 8)
     best = {}
     for t in ("score", "all"):
         d = df[(df.task == "answer") & (df.split == "dev") & (df.qtype == t)]

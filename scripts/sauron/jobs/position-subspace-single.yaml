@@ -1,13 +1,13 @@
 # Remoção do subespaço de posição só na camada L (emenda 7), dev e teste.
 #
-#   sauron submit -c scripts/sauron/jobs/position-subspace-single.yaml scripts/sauron/position_subspace.sauron
+#   sauron submit -f scripts/sauron/jobs/position-subspace-single.yaml   (script: relativo à pasta do YAML; ver a nota no fim)
 
 name: position-subspace-single
 image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
 gpus: 1
 vram: 89
-# 1ª ESTIMATIVA (nenhuma medida ainda): mesmo modelo e casos da ablação (pico de 2,2 a 2,7 GiB) mais os vetores de uma camada por vez na estimativa dos subespaços (127 MB float16, ~370 MB em float64).
-memory: 6g
+# Medido (job 4582): pico 4,7 GiB (estimativa dos subespaços das 22 camadas); 4,7 / 0,7 = 6,7 -> 7g. Duração 45 min.
+memory: 7g
 cpus: 4
 max_time: 3h
 
@@ -16,3 +16,6 @@ workspace: sae-decision-models
 env:
   MODES: "single"
   PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"
+# O `script:` é resolvido a partir da pasta do YAML. Na CLI 0.35 o `-c` não existe: o comando é `sauron submit -f <yaml>`.
+# Para enviar daqui sem copiar o script, passe o caminho absoluto: script: ~/workspace/sae-decision-models/scripts/sauron/position_subspace.sauron
+script: ../position_subspace.sauron

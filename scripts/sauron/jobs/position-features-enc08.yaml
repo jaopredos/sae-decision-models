@@ -1,13 +1,13 @@
 # Ablação das features de maior eta^2 de posição em enc_08, SAE de semente 0 (emenda 7).
 #
-#   sauron submit -c scripts/sauron/jobs/position-features-enc08.yaml scripts/sauron/position_features.sauron
+#   sauron submit -f scripts/sauron/jobs/position-features-enc08.yaml   (script: relativo à pasta do YAML; ver a nota no fim)
 
 name: position-features-enc08
 image: pytorch/pytorch:2.13.0-cuda13.0-cudnn9-devel
 gpus: 1
 vram: 89
-# 1ª ESTIMATIVA (nenhuma medida ainda): ablação anterior (pico de 2,2 a 2,7 GiB) mais os vetores da camada (127 MB) na seleção das features.
-memory: 5g
+# Medido (job 4584): pico 2,4 GiB; 2,4 / 0,7 = 3,4 -> 4g. Duração 22 min.
+memory: 4g
 cpus: 4
 max_time: 1h
 
@@ -17,3 +17,6 @@ env:
   SAE: "ml_enc08_k32"
   LAYER: "enc_08"
   PIP_FREEZE_OUT: "results/sae_features/pip_freeze.txt"
+# O `script:` é resolvido a partir da pasta do YAML. Na CLI 0.35 o `-c` não existe: o comando é `sauron submit -f <yaml>`.
+# Para enviar daqui sem copiar o script, passe o caminho absoluto: script: ~/workspace/sae-decision-models/scripts/sauron/position_features.sauron
+script: ../position_features.sauron
