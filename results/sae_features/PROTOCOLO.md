@@ -305,3 +305,24 @@ A lista é escolhida só nas rotações de descoberta (casos fora do dev), entã
 (4) Em E3 o teste foi a avaliação primária e o dev uma segunda conferência independente, sem filtro de células (a lista de features usa só a descoberta).
 (5) Operacional: a CLI do Sauron passou a `sauron submit -f <yaml>` com `script:` no YAML (o `-c` deixou de existir); os YAMLs de posição foram atualizados. RAM medida: sondas 4,8 GiB, subespaço 4,7 GiB (`single`) e 2,4 GiB (`onward`), features 2,4 GiB.
 (6) **Não feito:** subespaços para `final_norm` e para as camadas da cabeça de decisão (o efeito se concentra no fim; análise exploratória possível, fora deste protocolo) e a semente 1 em E3.
+
+## Emenda 8: depois da camada 22, aditividade, segunda semente nas features e rotação nos modelos em inglês (26/11/2026, antes de rodar)
+
+Três análises para fechar o mecanismo e ampliar o escopo, escolhidas **depois** de ver os resultados da emenda 7 (declarado). Todas reaproveitam código e dados já existentes; o teste de encanamento rodou nos 20 casos de descoberta (nenhum dev ou teste visto).
+Os critérios de E4 e E5 são **os mesmos da emenda 7** (Δ troca ≤ −3 p.p. com IC95% abaixo de zero, p empírico ≤ 0,05 contra 20 nulos, queda de acurácia ≤ 2 p.p., controle de conteúdo menor que metade do efeito; dev seleciona e o teste replica só o que qualificou).
+
+### E4, o subespaço de posição depois da camada 22 e a aditividade (`score`)
+Células: remover **só** em `enc_final` (23), `head_1` (24) e `head_2` (25); **`tail`** (da camada L até `head_2`) com L = 22 e 23; e conjuntos **14+22**, **17+22**, **14+17+22**. Cada camada com o seu subespaço (estimado na descoberta, como na emenda 7) e o nulo de subespaços aleatórios de mesma dimensão por camada.
+**Expectativas (palpites):** (a) `enc_final` qualifica e fica perto da camada 22 (−14 a −17 p.p.), pois é a mesma corrente reescalada; (b) `head_1` e `head_2` com efeito menor (−3 a −10 p.p.) ou nenhum, porque a posição é menos legível ali (0,67 e 0,64 nas sondas); (c) `tail` e os conjuntos **não passam do melhor efeito individual** (|Δ| ≤ ~18 p.p.), como o `onward` já sugeriu; o **índice de aditividade** a = Δ(conjunto) / (Δ_a + Δ_b) (para 14+22 e 17+22; os Δ individuais são os da emenda 7) deve ficar **abaixo de 0,6** (sub-aditivo; aditivo seria ≥ 0,8).
+Os conjuntos e o índice são descritivos; o critério de decisão só vale para as células individuais e `tail`.
+
+### E5, o efeito das features de posição se repete com a semente 1 (`score`)
+Mesma receita da emenda 7 (E3) com os SAEs de semente 1 (`ml_enc17_k32_s1` e `ml_enc08_k32_s1`): lista escolhida na descoberta, K ∈ {5, 20, 100}, teste como avaliação primária e dev como conferência. Mais a sobreposição das listas: das K features de maior η² de posição da semente 0, a fração com correspondente por decoder (cosseno ≥ 0,7) que também está entre as 100 de maior η² de posição da semente 1.
+**Expectativas:** `enc_17` semente 1 qualifica em K = 5 ou 20 no teste (o efeito agregado repete, como na ablação de erro); `enc_08` semente 1 não qualifica; sobreposição das listas **≤ 0,5** (a emenda 6 achou 0,15 e 0,35 para a lista de erro). **Critério:** o efeito "se repete entre sementes" se K = 5 ou 20 qualifica no teste em `enc_17` semente 1.
+
+### E6, o ajuste fino muda a sensibilidade? (rotação no Laya base e ajustado, inglês)
+Rotações cíclicas no **teste** (400 casos), só comportamento (sem vetores), mesma configuração de entrada comum 1024/256 da Parte C, `convaiinnovations/laya` revisão `e333cb7c…` (base: raiz; ajustado: `typed-decisions`). Comparação pareada por caso da taxa de troca (ajustado − base) com bootstrap; o multilíngue entra como referência descritiva (são redes diferentes).
+**Expectativas:** o ajustado é bem **menos sensível** em `score` (ele acerta 0,77 na ordem original); o base em inglês tem sensibilidade alta em `score` (≥ 0,7, perto dos 0,83 do multilíngue) e aversão à primeira opção; o ajuste reduz essa aversão. **Critério:** "o ajuste fino reduz a sensibilidade" se Δ troca (ajustado − base) em `score` < −10 p.p. com IC95% inteiro abaixo de zero.
+**Ressalva:** o ajustado viu o benchmark no treino (NÃO VERIFICADO qual split; só o teste vale); a comparação mostra o efeito do ajuste fino, não generalização, e não é causal.
+
+**Não será feito agora:** os experimentos causais (subespaço, features) nos modelos em inglês.
