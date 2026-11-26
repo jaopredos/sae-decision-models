@@ -55,3 +55,6 @@ foram enviados ao workspace do piloto em fila. Nenhum ambiente de colega alterad
 
 Base `experiment/position-mechanism`; head `experiment/position-sae-mechanism`.
 Não houve PR, merge ou force-push. Relatório comparativo final permanece pendente.
+### Incidente 4658
+
+Job4658 falhou antes da inferência: o pacote de atualização omitiu analyze_position_sae_features.py, importado por um teste sintético. Corrigido pacote; nova tentativa em diretório próprio, sem alterar resultados anteriores.
