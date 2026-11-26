@@ -6,7 +6,7 @@ Para a reunião. Detalhes: `REPORT.md` §8 a §10; critérios e expectativas fix
 **"O que acontece internamente nos modelos System One que causa sensibilidade à posição?"** Sensibilidade = a escolha muda quando só a ordem das opções muda. Foco em `score` (escolhido depois de ver o dado; `choice` e `noul` saem ao lado).
 
 ## Resposta em uma frase
-Em `score`, a sensibilidade à posição tem uma **causa interna localizada**: o sinal de posição que existe nos marcadores das opções nas camadas médias e tardias (14 e 22) e que a cabeça de decisão lê. Removê-lo reduz a troca da escolha em cerca de **um quinto** sem perder acurácia, e **5 a 20 features** do SAE da camada 17 carregam parte dele. Não é a única causa: ~65% das decisões continuam trocando.
+Em `score`, a sensibilidade à posição tem uma **causa interna localizada**: o sinal de posição que existe nos marcadores das opções nas camadas médias e tardias (14 e 22) e que a cabeça de decisão lê. Removê-lo reduz a troca da escolha em cerca de **um quinto** (**um quarto** nas camadas 14 + 22 juntas) sem perder acurácia, e **5 a 20 features** do SAE da camada 17 carregam parte dele (o efeito se repete com uma segunda semente do SAE). Não é a única causa: ~60% das decisões continuam trocando. **E o fenômeno é específico do checkpoint multilíngue**: o Laya base em inglês quase não tem a sensibilidade (troca 0,31 contra 0,83).
 
 ## Os números (todos `score`, teste, salvo indicação)
 | o que | resultado |
@@ -21,6 +21,9 @@ Em `score`, a sensibilidade à posição tem uma **causa interna localizada**: o
 | **Causal:** zerar 5–20 features de maior η² de posição em `enc_17` | −10 a −11 p.p., acurácia −0,6, controle 0,0 |
 | Mesma coisa em `enc_08` | nenhum efeito |
 | Camadas 1–6 e 10 (remover a posição) | só perturba (a troca sobe 2–8 p.p.) |
+| **Causal:** `final_norm` / cabeça / conjuntos | `final_norm` −15,0 p.p.; cabeça só perturba; **14 + 22: −20,5 p.p. (~25%)**, acurácia +2,4; efeito sub-aditivo |
+| **Causal:** 5–20 features de `enc_17`, semente 1 | −7 a −8 p.p., acurácia intacta (repete a semente 0) |
+| **Outros modelos** | troca em `score`: multilíngue 0,83; base (inglês) 0,31; ajustado 0,21; só o multilíngue tem a aversão à 1ª opção |
 
 ## O que eu tinha escrito antes de rodar, e errei
 Esperava **poucos ou nenhum** efeito causal (a posição seria recalculada pelas camadas seguintes). Erros: as camadas 14 e 22 reduzem a troca em 16–18 p.p.; 5–20 features de `enc_17` bastam. Acertei em `enc_08` (features sem efeito) e na legibilidade da posição. Tudo reportado como saiu.
@@ -35,16 +38,16 @@ Esperava **poucos ou nenhum** efeito causal (a posição seria recalculada pelas
 - `score` é uma escala ordinal: o Laya evitar a 1ª opção pode ser um prior aprendido, não um mecanismo; posição e "ordem esperada da escala" não se separam por rotação.
 - 26 células foram avaliadas no dev e 4 qualificaram, número que o acaso poderia produzir em 1 ou 2; três replicam no teste. O p empírico mínimo com 20 sorteios é 0,048.
 - O modo "da camada L até a 22" **não soma** os efeitos (remover da 14 à 22 dá −2 p.p.): **não sei explicar**.
-- O foco em `score` e os limiares dos critérios são convenções nossas.
+- O foco em `score` e os limiares dos critérios são convenções nossas; o critério do ajuste fino (−10 p.p.) **não foi atendido por 0,5 p.p.** e não foi retocado.
+- O mecanismo causal só foi testado no multilíngue; **não sabemos o que torna o multilíngue tão sensível** (o treino multilíngue? a largura? outra coisa), e esse é o ponto que um revisor vai atacar primeiro.
 - O ranking de features individuais depende da semente (`REPORT.md` §9); E3 só usa a semente 0.
 
 ## O que não foi feito (trabalho futuro)
-Activation patching entre rotações, ablação de cabeças de atenção, permutações completas, estado sem conteúdo, rotação nos modelos em inglês, e os subespaços de `final_norm` e da cabeça de decisão (o efeito se concentra no fim). Ficam registrados porque revisor vai perguntar.
+Activation patching entre rotações, ablação de cabeças de atenção, **permutações completas** de `score` (separariam posição de "ordem esperada da escala", a ressalva mais provável de revisor), estado sem conteúdo, e os experimentos causais nos modelos em inglês (o base nem é sensível). Ficam registrados porque revisor vai perguntar.
 
 ## Se der tempo (cada um exige protocolo escrito antes)
 | próximo passo | pergunta | custo |
 |---|---|---|
-| Remover o subespaço em `final_norm` e nas camadas da cabeça | O efeito é maior depois da 22? | job curto |
-| E3 com a semente 1 | A lista de 5–20 features é estável entre sementes? | ~15 min por camada |
-| Remover o subespaço de posição **e** o de conteúdo juntos, ou posição em 14 + 22 | Os efeitos somam? (hoje não somam) | ~20 min |
-| Rotação no Laya ajustado (inglês) | O fine-tuning reduz a sensibilidade? | extração curta |
+| **Permutações completas só de `score`** (24 ordens de 4 níveis) | A aversão à 1ª opção é posição ou prior sobre a ordem da escala? | extração de ~10 min + análise |
+| Outro checkpoint multilíngue, se existir | O que torna o multilíngue tão sensível? | depende de haver o modelo |
+| Remover posição + conteúdo juntos | O resto da sensibilidade (~60%) é interação posição × conteúdo? | ~20 min |

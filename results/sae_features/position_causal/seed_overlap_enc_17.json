@@ -1,0 +1,23 @@
+{
+ "layer": "enc_17",
+ "seed0": "ml_enc17_k32",
+ "seed1": "ml_enc17_k32_s1",
+ "K5": {
+  "matched": 3,
+  "matched_and_in_seed1_top100_position": 3,
+  "fraction": 0.6,
+  "same_index_in_top100": 0
+ },
+ "K20": {
+  "matched": 11,
+  "matched_and_in_seed1_top100_position": 8,
+  "fraction": 0.4,
+  "same_index_in_top100": 0
+ },
+ "K100": {
+  "matched": 48,
+  "matched_and_in_seed1_top100_position": 24,
+  "fraction": 0.24,
+  "same_index_in_top100": 0
+ }
+}

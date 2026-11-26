@@ -326,3 +326,10 @@ Rotações cíclicas no **teste** (400 casos), só comportamento (sem vetores), 
 **Ressalva:** o ajustado viu o benchmark no treino (NÃO VERIFICADO qual split; só o teste vale); a comparação mostra o efeito do ajuste fino, não generalização, e não é causal.
 
 **Não será feito agora:** os experimentos causais (subespaço, features) nos modelos em inglês.
+
+**Adendo à emenda 8 (26/11/2026, depois das rodadas).** Expectativas e critérios não foram alterados. Registro:
+(1) **Contra as expectativas** (tabelas em `REPORT.md` §10.6 a §10.8): E4, `final_norm` qualifica e repete a camada 22 (confirmada); cabeça sem efeito, piora (confirmada); conjuntos não passam do melhor individual (desmentida em parte: 14+22 = −20,5 p.p. contra −17,9 da camada 14); aditividade < 0,6 no limite (0,61 dev, 0,60 teste). E5, `enc_17` semente 1 qualifica em K = 5 e 20 (atendido), `enc_08` semente 1 não (confirmada), sobreposição ≤ 0,5 em K = 20 (0,40) e não em K = 5 (0,60). E6, **desmentida**: o base em inglês tem troca 0,31 em `score` (esperado ≥ 0,7) e não tem a aversão à primeira opção; o critério "ajuste fino reduz a sensibilidade" (< −10 p.p. com IC95% abaixo de zero) **não foi atendido**: −9,5 p.p., IC95% [−14,1; −5,5].
+(2) O script `run_rotation_compare.py` comparou, no job, contra o **primeiro** diretório (o multilíngue), e o protocolo pede ajustado − base; a comparação com o base como referência foi refeita localmente sobre os mesmos `rows.parquet` (`rotation_compare/vs_base/`). Os números do job estão em `rotation_compare/compare.json`.
+(3) O pandas lê a palavra `null` da coluna `kind` dos `conditions.csv` como valor ausente; os resultados dos jobs não são afetados (o julgamento usa o DataFrame em memória), mas qualquer leitura do CSV deve usar `keep_default_na=False`.
+(4) RAM medida: `tail` 2,5 GiB, features semente 1 2,4 GiB, rotação em inglês 4,0 GiB.
+(5) **Não feito:** permutações completas de `score` (separariam posição de ordem esperada da escala), estado sem conteúdo, os experimentos causais nos modelos em inglês (o base nem é sensível) e outras camadas além das testadas.
