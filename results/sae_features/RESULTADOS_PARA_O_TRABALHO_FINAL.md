@@ -32,7 +32,7 @@ a classe mais comum de cada pergunta (48%) e pouco acima do acaso (32%). **A inf
   5 perguntas por caso, três tipos de pergunta (`choice`, `score`, `noul` = sim/não). O gabarito é uma distribuição suave; a "resposta correta" é o rótulo (`label`), que está sempre entre os de maior probabilidade.
 - **Modelo principal:** `convaiinnovations/laya`, subpasta `multilingual` (mmBERT-base, 22 camadas, 768 dimensões), revisão `7b928d82…`. Par em inglês: `convaiinnovations/laya` (base) e `typed-decisions` (ajustado), revisão `e333cb7c…`.
 - **Separação dos dados.** *Dev* = 15% dos casos de treino, escolhidos por hash do id (180 casos, 900 decisões). *Descoberta* = treino sem o dev. **O teste nunca foi usado para escolher nada** (camada, hiperparâmetro, feature): só para medir e replicar.
-- **Critérios fixados antes de rodar** estão em `PROTOCOLO.md`; mudanças viraram "emendas" datadas (6 no total). O trabalho final deve dizer que houve emendas e por quê (ver `PROTOCOLO.md` e `REPORT.md` §2).
+- **Critérios fixados antes de rodar** estão em `PROTOCOLO.md`; mudanças viraram "emendas" datadas (8 no total). O trabalho final deve dizer que houve emendas e por quê (ver `PROTOCOLO.md` e `REPORT.md` §2).
 - **A entrada do modelo é a do próprio pacote `laya`** (não reimplementamos a formatação), com os limites do checkpoint (1024 tokens no multilíngue). Nenhum caso teve o texto cortado.
 - **Conferência de exatidão:** as ativações foram capturadas dentro do `predict` oficial e as probabilidades recalculadas bateram com as do pacote (diferença 0 nas 8.000 decisões).
 

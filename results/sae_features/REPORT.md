@@ -1,7 +1,7 @@
 # SAE e features que explicam o erro do Laya no typed-decisions (etapas 4 e 5)
 
-Tudo aqui é **correlacional**, exceto a fidelidade a jusante (que mede o SAE, não as features). A **ablação causal** da seção 7 foi feita depois, com protocolo próprio. Critérios e limiares foram fixados antes dos jobs em `PROTOCOLO.md`; as sete
-emendas (feitas por causa do que os dados mostraram; a 4 e a 5 são da ablação, a 6 da rotação e da semente, a 7 da causa da sensibilidade à posição) estão datadas lá e resumidas na seção 2 e nas seções 7 a 10. As tabelas completas, geradas dos artefatos
+Tudo aqui é **correlacional**, exceto a fidelidade a jusante (que mede o SAE, não as features). A **ablação causal** da seção 7 foi feita depois, com protocolo próprio. Critérios e limiares foram fixados antes dos jobs em `PROTOCOLO.md`; as oito
+emendas (feitas por causa do que os dados mostraram; a 4 e a 5 são da ablação, a 6 da rotação e da semente, a 7 da causa da sensibilidade à posição, a 8 das camadas finais, da semente 1 das features e dos modelos em inglês) estão datadas lá e resumidas na seção 2 e nas seções 7 a 10. As tabelas completas, geradas dos artefatos
 sem interpretação, estão em `REPORT_tables.md`.
 
 ## Resumo
@@ -55,6 +55,7 @@ Probe linear por camada no `laya-multilingual` (etapa 3, `results/probe_typed/`)
 - **Emenda 3 (depois de ver o `enc_08`):** o teste de Cochran-Mantel-Haenszel (CMH) estratifica pela identidade da opção a que a visão se refere. Foi uma escolha feita
   **depois** de ver contagens agregadas (sem selecionar feature alguma), então é exploratória; a primeira passada (estrato pergunta × opção prevista em todas as visões)
   está nas colunas `cmh_qp_*` e as tabelas mostram as duas.
+- **Emendas 4 e 5 (ablação causal de features, §7)**, **6 (rotação das opções e segunda semente do SAE, §8 e §9)**, **7 (causa da sensibilidade à posição: sondas, remoção do subespaço de posição, features de posição, §10.1 a §10.5)** e **8 (camadas finais, aditividade, semente 1 e modelos em inglês, §10.6 a §10.8)**: cada uma escrita **antes** de rodar, com expectativas e critérios; os desvios, os palpites errados e o que não foi feito estão nos adendos do `PROTOCOLO.md`.
 
 ## 3. Qualidade dos SAEs
 
